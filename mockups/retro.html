@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kwizz - Arcade minimal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #161616; --bg2: #101010; --surface: #1b1b1b; --surface2: #202020;
+    --border: #2a2a2a; --text: #f0f0f0; --muted: #6b6b6b; --faint: #3a3a3a;
+    --accent: #00ff88; --accent-ink: #07150d;
+    --pixel: 'Press Start 2P', monospace;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  /* accent variants (single colour, stays minimal) */
+  body.pal-ambre { --accent: #ffb000; --accent-ink: #1a1200; }
+  body.pal-cyan  { --accent: #38d6ff; --accent-ink: #04161c; }
+  body.pal-mono  { --accent: #f0f0f0; --accent-ink: #0c0c0c; }
+
+  body {
+    background: var(--bg2); color: var(--text); font-family: var(--sans);
+    min-height: 100vh; padding: 0 22px 80px;
+  }
+
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+
+  /* ---- palette switch ---- */
+  .pal-switch {
+    position: sticky; top: 0; z-index: 200; display: flex; gap: 9px; align-items: center;
+    justify-content: center; flex-wrap: wrap; padding: 13px; margin: 0 -22px 30px;
+    background: rgba(16,16,16,.95); border-bottom: 1px solid var(--border);
+  }
+  .pal-switch .pl { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+  .pal-switch button {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    background: transparent; color: var(--text); border: 1px solid var(--border);
+    padding: 7px 11px; cursor: pointer;
+  }
+  .pal-switch button:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---- header / design system ---- */
+  .ds { max-width: 1180px; margin: 0 auto; }
+  .ds h1 { font-family: var(--pixel); font-size: 26px; letter-spacing: 1px; }
+  .ds h1 b { color: var(--accent); }
+  .ds .sub { font-family: var(--mono); color: var(--muted); margin-top: 12px; font-size: 14px; letter-spacing: .5px; }
+  .ds-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 26px 0 6px; }
+  .ds-card { background: var(--surface); border: 1px solid var(--border); padding: 16px; }
+  .ds-card h3 { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: 1.5px; margin-bottom: 13px; }
+  .pal { display: flex; gap: 7px; align-items: center; }
+  .pal i { width: 30px; height: 30px; border: 1px solid var(--border); display: inline-block; }
+  .ds-card p { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 10px; }
+  .ds-card .demo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .legend { font-family: var(--mono); text-align: center; color: var(--muted); font-size: 13px; max-width: 760px; margin: 14px auto 0; line-height: 1.7; }
+
+  /* ---- shared atoms ---- */
+  .btn {
+    font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent);
+    padding: 13px 16px; cursor: pointer; text-align: center;
+  }
+  .btn.lg { width: 100%; padding: 16px; font-size: 13px; }
+  .btn.ghost { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn.line { background: transparent; color: var(--accent); }
+  .tag {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+    border: 1px solid var(--border); color: var(--muted); padding: 6px 8px; white-space: nowrap;
+  }
+  .tag.on { border-color: var(--accent); color: var(--accent); }
+  .panel { background: var(--surface); border: 1px solid var(--border); }
+  .lbl { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+  .mono { font-family: var(--mono); }
+  .px { font-family: var(--pixel); }
+  .acc { color: var(--accent); }
+  .mut { color: var(--muted); }
+  .c::before { content: ""; display: inline-block; width: 9px; height: 9px; border: 1.5px solid currentColor; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+
+  .xpbar { height: 7px; background: #0c0c0c; border: 1px solid var(--border); position: relative; overflow: hidden; }
+  .xpbar > i { display: block; height: 100%; background: var(--accent);
+    background-image: repeating-linear-gradient(90deg, rgba(0,0,0,.0) 0, rgba(0,0,0,.0) 7px, rgba(0,0,0,.35) 7px, rgba(0,0,0,.35) 8px); }
+
+  /* ---- phone ---- */
+  .grid { max-width: 1180px; margin: 30px auto 0; display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; }
+  .pw { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 300px; }
+  .cap { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .cap b { color: var(--accent); font-weight: 400; }
+  .phone { width: 300px; padding: 8px; background: #000; border-radius: 42px; box-shadow: 0 0 0 1px var(--border), 0 24px 50px rgba(0,0,0,.6); }
+  .screen { position: relative; width: 100%; height: 628px; border-radius: 34px; overflow: hidden; background: var(--bg); }
+  .screen::after { content: ""; position: absolute; inset: 0; z-index: 60; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 3px, rgba(0,0,0,.05) 4px); }
+  .island { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 84px; height: 22px; background: #000; border-radius: 999px; z-index: 40; }
+  .scr { position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; padding: 34px 18px 0; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .top .coin { font-family: var(--mono); font-weight: 700; font-size: 14px; color: var(--accent); }
+  .top .lv { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; color: var(--muted); border: 1px solid var(--border); padding: 4px 8px; }
+  .top .gear { color: var(--muted); font-size: 15px; }
+
+  .tabbar { margin: auto -18px 0; display: flex; justify-content: space-around; padding: 11px 6px 16px; border-top: 1px solid var(--border); background: var(--bg2); }
+  .tb { display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--muted); }
+  .tb .ic { font-size: 14px; line-height: 1; }
+  .tb .tx { font-family: var(--mono); font-size: 8px; letter-spacing: 1px; }
+  .tb.on { color: var(--accent); }
+
+  /* ---- home hero / avatar ---- */
+  .hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; min-height: 0; }
+  .stage { position: relative; width: 160px; height: 168px; display: flex; align-items: flex-end; justify-content: center; }
+  .mann { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; }
+  .mann .head { width: 42px; height: 42px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--faint); }
+  .mann .torso { width: 66px; height: 74px; margin-top: 7px; background: var(--surface2); border: 1px solid var(--faint); border-radius: 26px 26px 12px 12px; }
+  .stage .shadow { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 104px; height: 20px; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(0,0,0,.7) 0%, rgba(0,0,0,.35) 45%, transparent 72%); filter: blur(1px); z-index: 1; }
+  .stage .spot { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); width: 120px; height: 26px; border-radius: 50%; border: 1px dashed var(--faint); z-index: 0; }
+  .hero .nm { font-family: var(--mono); font-weight: 700; font-size: 17px; letter-spacing: .5px; margin-top: 8px; }
+  .hero .ti { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+  .xpwrap { margin-top: 14px; }
+  .xprow { display: flex; justify-content: space-between; margin-bottom: 6px; }
+
+  .daily { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px solid var(--border); margin-top: 12px; }
+  .daily .r { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--accent); }
+  .mrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+  /* ---- generic ---- */
+  .h { font-family: var(--mono); font-weight: 700; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+  .center { text-align: center; }
+  .row { display: flex; align-items: center; }
+  .between { display: flex; align-items: center; justify-content: space-between; }
+  .col { display: flex; flex-direction: column; }
+  .grow { flex: 1; min-width: 0; }
+  .mt6{margin-top:6px}.mt8{margin-top:8px}.mt10{margin-top:10px}.mt12{margin-top:12px}.mt14{margin-top:14px}.mt16{margin-top:16px}.mt20{margin-top:20px}.mt24{margin-top:24px}
+  .sm { font-size: 13px; } .xs { font-size: 12px; }
+
+  .qbox { border: 1px solid var(--border); padding: 22px 16px; text-align: center; }
+  .q { font-size: 18px; font-weight: 600; line-height: 1.4; }
+  .ans { border: 1px solid var(--border); padding: 14px; font-family: var(--mono); font-size: 13px; display: flex; gap: 10px; align-items: center; cursor: pointer; }
+  .ans .k { color: var(--muted); }
+  .ans.ok { border-color: var(--accent); color: var(--accent); }
+  .ans.ok .k { color: var(--accent); }
+
+  .score { font-family: var(--pixel); color: var(--accent); line-height: 1.2; }
+  .divider { height: 1px; background: var(--border); }
+
+  .catdot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+</style>
+</head>
+<body>
+  <div class="pal-switch">
+    <span class="pl">ACCENT</span>
+    <button data-pal="">VERT</button>
+    <button data-pal="pal-ambre">AMBRE</button>
+    <button data-pal="pal-cyan">CYAN</button>
+    <button data-pal="pal-mono">MONO</button>
+  </div>
+
+  <header class="ds">
+    <h1>K<b>W</b>IZZ</h1>
+    <p class="sub">Direction : ARCADE MINIMAL // fond sombre, monochrome, accent unique, monospace</p>
+    <div class="ds-grid">
+      <div class="ds-card">
+        <h3>PALETTE</h3>
+        <div class="pal">
+          <i style="background:#161616"></i><i style="background:#1b1b1b"></i>
+          <i style="background:#2a2a2a"></i><i style="background:#6b6b6b"></i><i style="background:#00ff88"></i>
+        </div>
+        <p>Presque tout en gris/blanc. Une seule couleur d'accent (vert par défaut), utilisée avec parcimonie : actif, scores, action principale.</p>
+      </div>
+      <div class="ds-card">
+        <h3>TYPO</h3>
+        <p style="margin-top:0"><span class="px" style="font-size:13px;color:var(--text)">PRESS START 2P</span><br>logo + gros scores arcade</p>
+        <p><span class="mono" style="font-size:13px;color:var(--text)">SPACE MONO</span> : labels, tags, chiffres<br><span style="font-family:var(--sans);font-size:14px;color:var(--text)">Inter</span> : questions, textes</p>
+      </div>
+      <div class="ds-card">
+        <h3>COMPOSANTS</h3>
+        <div class="demo">
+          <button class="btn">JOUER</button>
+          <button class="btn ghost">RETOUR</button>
+        </div>
+        <div class="demo mt12">
+          <span class="tag on">CLASSIQUE</span><span class="tag">SURVIE</span>
+        </div>
+        <div class="xpbar mt12"><i style="width:60%"></i></div>
+      </div>
+    </div>
+    <p class="legend">Change l'accent en haut (vert / ambre / cyan / mono). Avatar central + ombre sur l'accueil, barre d'XP, score façon arcade. 13 écrans ci-dessous.</p>
+  </header>
+
+  <main class="grid" id="app"></main>
+
+<script>
+  const island = `<div class="island"></div>`;
+  const tabs = [['⌂','ACCUEIL'],['▷','JOUER'],['◫','SHOP'],['↑','RANG'],['◉','PROFIL']];
+  const tab = (a) => `<div class="tabbar">${tabs.map((t,i)=>`<div class="tb ${i===a?'on':''}"><span class="ic">${t[0]}</span><span class="tx">${t[1]}</span></div>`).join('')}</div>`;
+  const top = (coins='240', lvl='7') => `<div class="top"><span class="coin c">${coins}</span><span class="lv">LVL ${lvl}</span><span class="gear">⚙</span></div>`;
+  const mann = `<div class="stage"><div class="spot"></div><div class="shadow"></div><div class="mann"><div class="head"></div><div class="torso"></div></div></div>`;
+
+  const S = [];
+
+  // 01 ONBOARDING
+  S.push(['01','ONBOARDING', `
+    <div class="scr center" style="justify-content:center;gap:22px;padding-bottom:30px">
+      <div class="px" style="font-size:34px;letter-spacing:1px">K<span class="acc">W</span>IZZ</div>
+      <div class="mono acc" style="font-size:12px;letter-spacing:2px">INSERT&nbsp;COIN</div>
+      ${mann}
+      <div class="mono mut" style="font-size:12px;letter-spacing:1px">◀ &nbsp; CHOISIS TON HÉROS &nbsp; ▶</div>
+      <div class="panel" style="padding:13px 14px;width:100%;text-align:left">
+        <div class="lbl">PSEUDO</div>
+        <div class="mono" style="font-size:18px;margin-top:6px">RetroKid<span class="acc">_</span></div>
+      </div>
+      <button class="btn lg">PRESS START</button>
+      <div class="mono mut" style="font-size:12px">déjà un compte ? <span class="acc">se connecter</span></div>
+    </div>`]);
+
+  // 02 ACCUEIL (avatar central + ombre + xp)
+  S.push(['02','ACCUEIL', `
+    <div class="scr">
+      ${top()}
+      <div class="hero">
+        ${mann}
+        <div class="nm">RetroKid</div>
+        <div class="ti">Abonné à Wikipédia</div>
+        <div class="xpwrap" style="width:100%">
+          <div class="xprow"><span class="lbl">LVL 7</span><span class="lbl">1360 / 2400 XP</span></div>
+          <div class="xpbar"><i style="width:57%"></i></div>
+        </div>
+      </div>
+      <button class="btn lg">JOUER</button>
+      <div class="daily">
+        <div class="col"><span class="lbl">DÉFI DU JOUR</span><span class="mut xs" style="margin-top:3px">1 essai restant</span></div>
+        <span class="r c">+50</span>
+      </div>
+      <div class="mrow">
+        <span class="tag on">CLASSIQUE</span><span class="tag">CONTRE-MONTRE</span><span class="tag">SURVIE</span><span class="tag">MARATHON</span><span class="tag">DUEL</span><span class="tag">LIBRE</span>
+      </div>
+      ${tab(0)}
+    </div>`]);
+
+  // 03 MODES
+  const modes = [
+    ['CLASSIQUE','15 questions, meilleur score'],
+    ['CONTRE-LA-MONTRE','max de bonnes en 60s'],
+    ['SURVIE','jusqu\'à la 1re erreur'],
+    ['MARATHON','30+ questions, paliers'],
+    ['LIBRE','sans chrono, entraînement'],
+    ['DUEL','1v1 contre un bot'],
+    ['DÉFI DU JOUR','grille du jour, 1 essai'],
+  ];
+  S.push(['03','CHOIX DU MODE', `
+    <div class="scr">
+      <div class="between" style="margin-bottom:18px"><button class="btn ghost xs" style="padding:8px 12px">◀ RETOUR</button><span class="coin c mono acc" style="font-size:13px">240</span></div>
+      <div class="h acc" style="margin-bottom:14px">CHOISIS TON MODE</div>
+      <div class="col" style="gap:0">
+        ${modes.map((m,i)=>`
+          <div class="between" style="padding:14px 2px;${i?'border-top:1px solid var(--border)':''}">
+            <div class="col"><span class="mono" style="font-size:13px;letter-spacing:.5px">${m[0]}</span><span class="mut xs" style="margin-top:4px">${m[1]}</span></div>
+            <span class="acc mono">▶</span>
+          </div>`).join('')}
+      </div>
+      ${tab(1)}
+    </div>`]);
+
+  // 04 CATEGORIES (liste minimale facon IDEAS)
+  const cats = [
+    ['Histoire','#ffb000'],['Géographie','#38d6ff'],['Sciences','#00ff88'],['Sport','#ff7a3c'],
+    ['Ciné & Séries','#fb7185'],['Musique','#c084fc'],['Arts & Litt.','#f0f0f0'],['Actu & Société','#38d6ff'],
+    ['Nature','#00ff88'],['Tech & Jeux','#fb7185'],['Gastronomie','#ffb000'],['Pop culture','#c084fc'],['Mythes','#ff7a3c'],
+  ];
+  S.push(['04','CATÉGORIES', `
+    <div class="scr">
+      <div class="between" style="margin-bottom:16px"><button class="btn ghost xs" style="padding:8px 12px">◀ RETOUR</button><span class="coin c mono acc" style="font-size:13px">240</span></div>
+      <div class="h" style="margin-bottom:6px">CATÉGORIES</div>
+      <div class="col" style="gap:0;overflow:hidden">
+        ${cats.map((c,i)=>`
+          <div class="row" style="gap:11px;padding:11px 2px;${i?'border-top:1px solid var(--border)':''}">
+            <span class="catdot" style="background:${c[1]}"></span>
+            <span class="grow sm">${c[0]}</span>
+            <span class="mut mono">→</span>
+          </div>`).join('')}
+      </div>
+      ${tab(1)}
+    </div>`]);
+
+  // 05 DIFFICULTE
+  const diffs = [['FACILE','20s · gain x1'],['NORMAL','15s · gain x1.5'],['DIFFICILE','10s · gain x2.5']];
+  S.push(['05','DIFFICULTÉ', `
+    <div class="scr">
+      <div class="between" style="margin-bottom:18px"><button class="btn ghost xs" style="padding:8px 12px">◀ RETOUR</button><span class="coin c mono acc" style="font-size:13px">240</span></div>
+      <div class="h acc" style="margin-bottom:6px">DIFFICULTÉ</div>
+      <div class="mut sm" style="margin-bottom:16px">Plus dur = plus risqué = plus payant.</div>
+      <div class="col" style="gap:12px">
+        ${diffs.map((d,i)=>`
+          <div class="panel between" style="padding:18px 16px;${i===1?'border-color:var(--accent)':''}">
+            <span class="mono" style="font-size:14px;letter-spacing:1px;${i===1?'color:var(--accent)':''}">${d[0]}</span>
+            <span class="lbl">${d[1]}</span>
+          </div>`).join('')}
+      </div>
+      <button class="btn lg" style="margin-top:18px">GO</button>
+      ${tab(1)}
+    </div>`]);
+
+  // 06 PARTIE (arcade score)
+  S.push(['06','PARTIE (CLASSIQUE)', `
+    <div class="scr">
+      <div class="between" style="margin-bottom:14px">
+        <div class="col"><span class="lbl">SCORE</span><span class="score" style="font-size:22px;margin-top:5px">1150</span></div>
+        <div class="col" style="text-align:right"><span class="lbl">QUESTION</span><span class="mono" style="font-size:16px;margin-top:5px">06/15</span></div>
+      </div>
+      <div class="between" style="margin-bottom:6px"><span class="lbl">VITESSE · bonus +70</span><span class="lbl">🔥 série 4</span></div>
+      <div class="xpbar" style="margin-bottom:18px"><i style="width:72%"></i></div>
+      <div class="qbox"><div class="q">Quelle est la capitale de l'Australie ?</div></div>
+      <div class="col mt16" style="gap:9px">
+        <div class="ans"><span class="k">A</span> Sydney</div>
+        <div class="ans ok"><span class="k">B</span> Canberra</div>
+        <div class="ans"><span class="k">C</span> Melbourne</div>
+        <div class="ans"><span class="k">D</span> Perth</div>
+      </div>
+    </div>`]);
+
+  // 07 RESULTATS
+  S.push(['07','RÉSULTATS', `
+    <div class="scr center">
+      <div class="mono acc" style="font-size:12px;letter-spacing:2px;margin:8px 0 4px">★ NOUVEAU RECORD ★</div>
+      <div class="lbl" style="margin-top:14px">SCORE</div>
+      <div class="score" style="font-size:50px;margin:10px 0 2px">2380</div>
+      <div class="mut mono xs">/ 3000</div>
+      <div class="panel" style="width:100%;margin-top:22px">
+        <div class="between" style="padding:13px 15px"><span class="sm">Bonnes réponses</span><span class="mono acc">13/15</span></div>
+        <div class="between" style="padding:13px 15px;border-top:1px solid var(--border)"><span class="sm">Bonus vitesse</span><span class="mono">+880</span></div>
+        <div class="between" style="padding:13px 15px;border-top:1px solid var(--border)"><span class="sm">Pièces</span><span class="mono acc c">+24</span></div>
+        <div class="between" style="padding:13px 15px;border-top:1px solid var(--border)"><span class="sm">XP</span><span class="mono">+150</span></div>
+      </div>
+      <button class="btn lg" style="margin-top:18px">REJOUER</button>
+      <button class="btn ghost lg" style="margin-top:9px">ACCUEIL</button>
+    </div>`]);
+
+  // 08 LEVEL UP
+  S.push(['08','LEVEL UP', `
+    <div class="scr center" style="justify-content:center;gap:16px">
+      <div class="mono acc" style="font-size:13px;letter-spacing:3px">L E V E L &nbsp; U P</div>
+      <div class="score" style="font-size:56px">08</div>
+      ${mann}
+      <div class="panel" style="width:100%;padding:15px;text-align:center">
+        <div class="lbl">NOUVEAU TITRE</div>
+        <div class="mono" style="font-size:17px;margin-top:8px">Tête de classe</div>
+      </div>
+      <div class="row" style="justify-content:center;gap:30px">
+        <div class="center"><div class="mono acc" style="font-size:16px"><span class="c">+30</span></div><div class="lbl" style="margin-top:5px">PIÈCES</div></div>
+        <div class="center"><div class="mono" style="font-size:16px">+1</div><div class="lbl" style="margin-top:5px">ITEM</div></div>
+      </div>
+      <button class="btn lg" style="margin-top:6px">CONTINUER</button>
+    </div>`]);
+
+  // 09 BOUTIQUE
+  const items = [['Haut-de-forme','120',false],['Lunettes','200',false],['Couronne','900',true],['Casquette','80',false],['Veste','350',false],['Fond CRT','500',true]];
+  S.push(['09','BOUTIQUE', `
+    <div class="scr">
+      ${top()}
+      <div class="between" style="margin:4px 0 14px"><span class="h">BOUTIQUE</span><span class="lbl">OFFRE · 11:32:04</span></div>
+      <div class="mrow" style="margin:0 0 14px">
+        <span class="tag on">TÊTE</span><span class="tag">LUNETTES</span><span class="tag">TENUE</span><span class="tag">FOND</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${items.map(it=>`
+          <div class="panel" style="padding:14px 12px;text-align:center;${it[2]?'opacity:.55':''}">
+            <div style="height:46px;display:grid;place-items:center"><div style="width:34px;height:34px;border:1px solid var(--faint);background:var(--surface2)"></div></div>
+            <div class="sm" style="margin-top:8px">${it[0]}</div>
+            <div class="mono ${it[2]?'mut':'acc'}" style="font-size:12px;margin-top:7px">${it[2]?'🔒 LVL 12':'<span class="c">'+it[1]+'</span>'}</div>
+          </div>`).join('')}
+      </div>
+      ${tab(2)}
+    </div>`]);
+
+  // 10 AVATAR
+  S.push(['10','AVATAR (VESTIAIRE)', `
+    <div class="scr">
+      <div class="between" style="margin-bottom:10px"><button class="btn ghost xs" style="padding:8px 12px">◀</button><span class="h">VESTIAIRE</span><span class="coin c mono acc" style="font-size:13px">240</span></div>
+      <div class="panel" style="padding:14px;display:grid;place-items:center;margin-bottom:16px">${mann}</div>
+      <div class="mrow" style="margin:0 0 14px">
+        <span class="tag on">TÊTE</span><span class="tag">CHEVEUX</span><span class="tag">LUNETTES</span><span class="tag">HAUT</span><span class="tag">FOND</span>
+      </div>
+      <div class="row" style="justify-content:space-between;gap:10px">
+        <span class="acc mono">◀</span>
+        <div class="row" style="gap:9px">
+          <div class="panel" style="width:54px;height:54px;border-color:var(--accent)"></div>
+          <div class="panel" style="width:54px;height:54px"></div>
+          <div class="panel" style="width:54px;height:54px;opacity:.5"></div>
+        </div>
+        <span class="acc mono">▶</span>
+      </div>
+      <button class="btn lg" style="margin-top:18px">ÉQUIPER</button>
+      ${tab(4)}
+    </div>`]);
+
+  // 11 CLASSEMENT
+  const ranks = [['1','MaxooQ','LVL 12','3120',false],['2','Lana','LVL 11','2990',false],['3','K3vin','LVL 10','2710',false],['7','TOI','LVL 7','2380',true],['8','Sofia','LVL 9','2150',false]];
+  S.push(['11','CLASSEMENT', `
+    <div class="scr">
+      ${top()}
+      <div class="h" style="margin:4px 0 12px">CLASSEMENT</div>
+      <div class="mrow" style="margin:0 0 14px"><span class="tag on">AMIS</span><span class="tag">MONDE</span><span class="tag">CATÉGORIE</span></div>
+      <div class="col" style="gap:0">
+        ${ranks.map((r,i)=>`
+          <div class="row" style="gap:12px;padding:13px 4px;${i?'border-top:1px solid var(--border)':''}${r[4]?';background:var(--surface)':''}">
+            <span class="mono ${i<3?'acc':'mut'}" style="width:18px;font-size:13px">${r[0]}</span>
+            <div class="grow"><div class="sm ${r[4]?'acc':''}">${r[1]}</div><div class="lbl" style="margin-top:3px">${r[2]}</div></div>
+            <span class="mono" style="font-size:13px">${r[3]}</span>
+          </div>`).join('')}
+      </div>
+      ${tab(3)}
+    </div>`]);
+
+  // 12 PROFIL
+  const stats = [['PARTIES','342'],['% BONNES','78'],['MEILLEUR','2980'],['SÉRIE MAX','22']];
+  S.push(['12','PROFIL', `
+    <div class="scr">
+      <div class="between" style="margin-bottom:8px"><span class="h">PROFIL</span><span class="gear mut">⚙</span></div>
+      <div class="center">
+        ${mann}
+        <div class="nm mono" style="font-weight:700;font-size:16px;margin-top:6px">RetroKid</div>
+        <div class="ti mut sm">NIV.7 · Abonné à Wikipédia</div>
+        <div class="xpwrap" style="text-align:left">
+          <div class="xprow"><span class="lbl">LVL 7</span><span class="lbl">1360 / 2400 XP</span></div>
+          <div class="xpbar"><i style="width:57%"></i></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px">
+        ${stats.map(s=>`<div class="panel center" style="padding:13px"><div class="mono acc" style="font-size:17px">${s[1]}</div><div class="lbl" style="margin-top:6px">${s[0]}</div></div>`).join('')}
+      </div>
+      <div class="lbl" style="margin:16px 0 9px">SUCCÈS</div>
+      <div class="row" style="gap:9px">
+        ${[1,1,1,0,0].map(o=>`<div class="panel" style="width:46px;height:46px;${o?'border-color:var(--accent)':'opacity:.4'}"></div>`).join('')}
+      </div>
+      ${tab(4)}
+    </div>`]);
+
+  // 13 REGLAGES
+  const set = [['SON','ON',true],['MUSIQUE','ON',true],['NOTIFICATIONS','OFF',false],['LANGUE','FR',null],['COMPTE','',null],['CONFIDENTIALITÉ','',null]];
+  S.push(['13','RÉGLAGES', `
+    <div class="scr">
+      <div class="between" style="margin-bottom:14px"><button class="btn ghost xs" style="padding:8px 12px">◀</button><span class="h">RÉGLAGES</span><span style="width:34px"></span></div>
+      <div class="col" style="gap:0">
+        ${set.map((s,i)=>`
+          <div class="between" style="padding:16px 4px;${i?'border-top:1px solid var(--border)':''}">
+            <span class="sm">${s[0]}</span>
+            ${s[2]===null
+              ? `<span class="mono mut" style="font-size:12px">${s[1]?s[1]+' →':'→'}</span>`
+              : `<span class="mono" style="font-size:9px;letter-spacing:1px;padding:5px 9px;border:1px solid ${s[2]?'var(--accent)':'var(--border)'};color:${s[2]?'var(--accent)':'var(--muted)'}">${s[1]}</span>`}
+          </div>`).join('')}
+      </div>
+      <div class="center mut mono xs" style="margin-top:18px">KWIZZ v0.1</div>
+      ${tab(4)}
+    </div>`]);
+
+  // render
+  document.getElementById('app').innerHTML = S.map(([n,cap,html]) => `
+    <div class="pw">
+      <div class="phone"><div class="screen">${island}${html}</div></div>
+      <span class="cap"><b>${n}</b> · ${cap}</span>
+    </div>`).join('');
+
+  document.querySelectorAll('.pal-switch [data-pal]').forEach(b =>
+    b.addEventListener('click', () => { document.body.className = b.dataset.pal; })
+  );
+</script>
+</body>
+</html>

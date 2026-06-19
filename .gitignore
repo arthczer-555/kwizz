@@ -1,0 +1,15 @@
+# Secrets (duel en ligne / Supabase) - ne jamais committer
+.env
+Secrets.xcconfig
+
+# macOS
+.DS_Store
+
+# Build
+.build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Sauvegardes
+*.bak

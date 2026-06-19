@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kwizz - Directions de design</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+  body {
+    background: radial-gradient(1200px 600px at 50% -10%, #1c2230, #0c0e14 60%);
+    color: #e7ebf3;
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+  }
+
+  .page-head { max-width: 1100px; margin: 0 auto 8px; text-align: center; }
+  .page-head h1 { font-size: 34px; letter-spacing: -0.5px; }
+  .page-head .sub { color: #9aa4b8; margin-top: 8px; font-size: 15px; }
+  .decisions {
+    max-width: 760px; margin: 20px auto 0; display: flex; gap: 8px; flex-wrap: wrap;
+    justify-content: center;
+  }
+  .decisions span {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px; color: #c7cfde;
+  }
+  .hint { max-width: 760px; margin: 16px auto 0; text-align: center; color: #7f8aa0; font-size: 13.5px; }
+
+  /* ---- design section ---- */
+  .design { max-width: 1100px; margin: 56px auto 0; }
+  .design-head { margin-bottom: 22px; }
+  .design-head h2 { font-size: 24px; letter-spacing: -0.3px; }
+  .design-head p { color: #9aa4b8; margin-top: 4px; font-size: 14px; }
+  .palette { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .swatch { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #c7cfde; }
+  .swatch i { width: 22px; height: 22px; border-radius: 6px; display: inline-block; border: 1px solid rgba(255,255,255,.15); }
+  .swatch b { font-weight: 600; }
+  .swatch code { color: #8a93a6; font-size: 11px; }
+
+  .phones { display: flex; gap: 26px; flex-wrap: wrap; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .cap { font-size: 12px; color: #8a93a6; letter-spacing: .3px; text-transform: uppercase; }
+
+  /* ---- phone frame ---- */
+  .phone {
+    width: 286px; height: 600px; border-radius: 46px;
+    background: #000; padding: 11px;
+    box-shadow: 0 30px 60px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.04) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%; border-radius: 36px; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .island {
+    position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+    width: 92px; height: 26px; background: #000; border-radius: 999px; z-index: 5;
+  }
+  .statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 22px 6px; font-size: 12px; font-weight: 600; color: var(--text);
+  }
+  .content { flex: 1; display: flex; flex-direction: column; padding: 6px 16px 0; overflow: hidden; }
+
+  /* ---- shared components (themed via variables) ---- */
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 14px; }
+  .coins {
+    background: var(--surface); color: var(--text); font-weight: 700; font-size: 14px;
+    padding: 7px 13px; border-radius: var(--pill); border: var(--border);
+  }
+  .gear { font-size: 18px; opacity: .8; }
+
+  .playercard {
+    background: var(--surface); border: var(--border); border-radius: var(--radius);
+    padding: 14px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow);
+  }
+  .avatar {
+    width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center;
+    font-size: 26px; background: var(--avatar-bg); border: var(--avatar-border); flex: none;
+  }
+  .pinfo { flex: 1; min-width: 0; }
+  .level { font-size: 12px; font-weight: 700; color: var(--primary); }
+  .title { font-size: 14px; font-weight: 700; margin: 1px 0 8px; color: var(--text); }
+  .xpbar { height: 8px; border-radius: 999px; background: var(--track); overflow: hidden; }
+  .xpfill { height: 100%; width: 68%; background: var(--primary); border-radius: 999px; box-shadow: var(--glow); }
+
+  .playbtn {
+    margin-top: 16px; border: none; cursor: pointer;
+    background: var(--primary); color: var(--on-primary);
+    font-size: 18px; font-weight: 800; letter-spacing: .5px;
+    padding: 16px; border-radius: var(--radius); width: 100%;
+    box-shadow: var(--btn-shadow); border: var(--btn-border);
+  }
+
+  .daily {
+    margin-top: 12px; background: var(--surface); border: var(--border);
+    border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .daily .dl { font-size: 13.5px; font-weight: 700; }
+  .daily .reward { font-size: 13.5px; font-weight: 800; color: var(--accent-text); }
+
+  .modes-label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 16px 0 8px; }
+  .modes { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip {
+    font-size: 12px; font-weight: 600; padding: 7px 11px; border-radius: var(--pill);
+    background: var(--chip-bg); color: var(--chip-text); border: var(--chip-border);
+  }
+  .chip.on { background: var(--secondary); color: var(--on-secondary); border-color: transparent; }
+
+  .tabbar {
+    margin-top: auto; display: flex; justify-content: space-around; align-items: center;
+    padding: 12px 8px 16px; background: var(--tab-bg); border-top: var(--border);
+    margin-left: -16px; margin-right: -16px;
+  }
+  .tab { font-size: 19px; opacity: .45; }
+  .tab.on { opacity: 1; filter: var(--tab-active); }
+
+  /* ---- quiz screen ---- */
+  .quiztop { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 12px; }
+  .timer { background: var(--surface); border: var(--border); padding: 6px 12px; border-radius: var(--pill); font-weight: 700; font-size: 13px; }
+  .streak { font-weight: 800; font-size: 14px; color: var(--accent-text); }
+  .progress { height: 7px; border-radius: 999px; background: var(--track); overflow: hidden; }
+  .progressfill { height: 100%; width: 40%; background: var(--secondary); border-radius: 999px; }
+  .qcount { font-size: 11.5px; color: var(--muted); margin: 8px 0 2px; text-align: center; }
+  .question { font-size: 19px; font-weight: 800; line-height: 1.3; text-align: center; margin: 14px 6px 18px; }
+  .answers { display: flex; flex-direction: column; gap: 10px; }
+  .answer {
+    background: var(--surface); color: var(--text); border: var(--answer-border);
+    border-radius: var(--radius); padding: 14px; font-size: 14.5px; font-weight: 600;
+    text-align: center; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .answer.correct { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+  .jokers { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+  .joker { font-size: 12px; font-weight: 700; padding: 8px 12px; border-radius: var(--pill); background: var(--chip-bg); color: var(--chip-text); border: var(--chip-border); }
+
+  /* ---- results screen ---- */
+  .rcenter { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding-top: 10px; }
+  .rtitle { font-size: 22px; font-weight: 800; }
+  .bigscore { font-size: 56px; font-weight: 900; color: var(--primary); letter-spacing: -1px; line-height: 1.1; }
+  .rbox { width: 100%; background: var(--surface); border: var(--border); border-radius: var(--radius); padding: 14px 16px; margin-top: 14px; box-shadow: var(--shadow); }
+  .rline { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; padding: 7px 0; }
+  .rline + .rline { border-top: 1px solid var(--track); }
+  .rline b { font-weight: 800; color: var(--accent-text); }
+  .rbtns { width: 100%; margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .ghostbtn { background: transparent; color: var(--muted); border: var(--border); border-radius: var(--radius); padding: 13px; font-weight: 700; font-size: 14px; cursor: pointer; }
+
+  /* =================== THEMES =================== */
+
+  /* A - Néon Arcade */
+  .theme-neon {
+    --bg: #0E0B1F; --surface: #1B1635; --text: #F5F3FF; --muted: #9A93C7;
+    --primary: #FF2E97; --secondary: #00E5FF; --accent: #39FF14;
+    --on-primary: #fff; --on-secondary: #04121a; --on-accent: #052b04; --accent-text: #39FF14;
+    --radius: 18px; --pill: 999px;
+    --border: 1px solid rgba(255,255,255,.08);
+    --answer-border: 1px solid rgba(0,229,255,.28);
+    --chip-bg: rgba(255,255,255,.05); --chip-text: #cfd6f5; --chip-border: 1px solid rgba(0,229,255,.25);
+    --track: rgba(255,255,255,.10); --avatar-bg: #2a2350; --avatar-border: 2px solid var(--primary);
+    --shadow: none; --glow: 0 0 12px var(--primary);
+    --btn-shadow: 0 0 24px rgba(255,46,151,.55); --btn-border: none;
+    --tab-bg: rgba(0,0,0,.25); --tab-active: drop-shadow(0 0 6px var(--secondary));
+  }
+
+  /* B - Candy Pop */
+  .theme-candy {
+    --bg: #FFF8F0; --surface: #FFFFFF; --text: #2D3142; --muted: #8A8FA3;
+    --primary: #FF6B6B; --secondary: #4ECDC4; --accent: #FFD93D;
+    --on-primary: #fff; --on-secondary: #06443f; --on-accent: #5a4a00; --accent-text: #E59400;
+    --radius: 22px; --pill: 999px;
+    --border: 1px solid rgba(45,49,66,.06);
+    --answer-border: 2px solid rgba(45,49,66,.08);
+    --chip-bg: #fff; --chip-text: #2D3142; --chip-border: 2px solid rgba(78,205,196,.5);
+    --track: #ffe3d6; --avatar-bg: #FFE3D6; --avatar-border: 3px solid var(--primary);
+    --shadow: 0 6px 16px rgba(45,49,66,.08); --glow: none;
+    --btn-shadow: 0 8px 18px rgba(255,107,107,.4); --btn-border: none;
+    --tab-bg: #fff; --tab-active: none;
+  }
+
+  /* C - Premium Minimal */
+  .theme-minimal {
+    --bg: #FAFAFA; --surface: #FFFFFF; --text: #111827; --muted: #9CA3AF;
+    --primary: #4F46E5; --secondary: #EEF0FE; --accent: #10B981;
+    --on-primary: #fff; --on-secondary: #4F46E5; --on-accent: #fff; --accent-text: #10B981;
+    --radius: 12px; --pill: 8px;
+    --border: 1px solid #ECECEF;
+    --answer-border: 1px solid #E5E7EB;
+    --chip-bg: #fff; --chip-text: #374151; --chip-border: 1px solid #E5E7EB;
+    --track: #EEF0F3; --avatar-bg: #EEF0FE; --avatar-border: 1px solid #E5E7EB;
+    --shadow: 0 1px 2px rgba(17,24,39,.05); --glow: none;
+    --btn-shadow: none; --btn-border: none;
+    --tab-bg: #fff; --tab-active: none;
+  }
+
+  /* D - Rétro Quiz TV */
+  .theme-tv {
+    --bg: #0B1D3A; --surface: #13315C; --text: #EAF0FF; --muted: #8FA6C9;
+    --primary: #FFC93C; --secondary: #E63946; --accent: #FFC93C;
+    --on-primary: #0B1D3A; --on-secondary: #fff; --on-accent: #0B1D3A; --accent-text: #FFC93C;
+    --radius: 14px; --pill: 8px;
+    --border: 1px solid rgba(255,201,60,.22);
+    --answer-border: 1px solid rgba(255,201,60,.35);
+    --chip-bg: rgba(255,255,255,.04); --chip-text: #EAF0FF; --chip-border: 1px solid rgba(255,201,60,.4);
+    --track: rgba(255,255,255,.12); --avatar-bg: #0B1D3A; --avatar-border: 2px solid var(--primary);
+    --shadow: none; --glow: 0 0 10px rgba(255,201,60,.5);
+    --btn-shadow: 0 6px 0 #c79a1f; --btn-border: none;
+    --tab-bg: rgba(0,0,0,.2); --tab-active: drop-shadow(0 0 5px var(--primary));
+  }
+</style>
+</head>
+<body>
+  <header class="page-head">
+    <h1>Kwizz - 4 directions de design</h1>
+    <p class="sub">Maquettes interactives. Compare l'ambiance de chaque palette sur 3 écrans clés.</p>
+    <div class="decisions">
+      <span>💰 Pièces seules (MVP)</span>
+      <span>🎮 Classique 15Q · Contre-la-montre · Survie · Marathon · Libre</span>
+      <span>🧑 Avatar humain stylisé</span>
+    </div>
+    <p class="hint">Dis-moi laquelle te parle (ou un mélange). On pourra en dériver un thème clair + un thème sombre.</p>
+  </header>
+
+  <main id="app"></main>
+
+<script>
+  const themes = [
+    { cls: 'theme-neon',    name: 'A · Néon Arcade',     tag: 'Sombre, gamer, accents néon qui « glow ». Énergique et moderne.',
+      palette: [['Fond','#0E0B1F'],['Magenta','#FF2E97'],['Cyan','#00E5FF'],['Vert','#39FF14']] },
+    { cls: 'theme-candy',   name: 'B · Candy Pop',        tag: 'Clair, rond, coloré, joyeux. Grand public (type Trivia Crack / Duolingo).',
+      palette: [['Crème','#FFF8F0'],['Corail','#FF6B6B'],['Turquoise','#4ECDC4'],['Jaune','#FFD93D']] },
+    { cls: 'theme-minimal', name: 'C · Premium Minimal',  tag: 'Épuré, beaucoup d\'espace, une seule couleur d\'accent. Chic et qualitatif.',
+      palette: [['Fond','#FAFAFA'],['Indigo','#4F46E5'],['Gris','#E5E7EB'],['Émeraude','#10B981']] },
+    { cls: 'theme-tv',      name: 'D · Rétro Quiz TV',    tag: 'Bleu nuit + or, ambiance plateau de jeu télé. Colle au thème « Émilien ».',
+      palette: [['Bleu nuit','#0B1D3A'],['Or','#FFC93C'],['Rouge','#E63946'],['Bleu roi','#13315C']] },
+  ];
+
+  const statusbar = `<div class="statusbar"><span>9:41</span><span>5G &nbsp; 100% 🔋</span></div>`;
+  const island = `<div class="island"></div>`;
+
+  const homeScreen = `
+    ${island}
+    <div class="screen">
+      ${statusbar}
+      <div class="content">
+        <div class="topbar">
+          <div class="coins">🪙 1 240</div>
+          <div class="gear">⚙️</div>
+        </div>
+        <div class="playercard">
+          <div class="avatar">🧑</div>
+          <div class="pinfo">
+            <div class="level">NIVEAU 7</div>
+            <div class="title">Abonné à Wikipédia</div>
+            <div class="xpbar"><div class="xpfill"></div></div>
+          </div>
+        </div>
+        <button class="playbtn">▶  JOUER</button>
+        <div class="daily">
+          <div class="dl">🔥 Défi du jour</div>
+          <div class="reward">+100 🪙</div>
+        </div>
+        <div class="modes-label">Modes</div>
+        <div class="modes">
+          <span class="chip on">Classique</span>
+          <span class="chip">Contre-la-montre</span>
+          <span class="chip">Survie</span>
+          <span class="chip">Marathon</span>
+          <span class="chip">Libre</span>
+        </div>
+        <div class="tabbar">
+          <span class="tab on">🏠</span><span class="tab">🎮</span><span class="tab">🛍️</span><span class="tab">🏆</span><span class="tab">👤</span>
+        </div>
+      </div>
+    </div>`;
+
+  const quizScreen = `
+    ${island}
+    <div class="screen">
+      ${statusbar}
+      <div class="content">
+        <div class="quiztop">
+          <span class="timer">⏱ 00:12</span>
+          <span class="streak">🔥 4</span>
+        </div>
+        <div class="progress"><div class="progressfill"></div></div>
+        <div class="qcount">Question 6 / 15</div>
+        <div class="question">Quelle est la capitale de l'Australie ?</div>
+        <div class="answers">
+          <button class="answer">Sydney</button>
+          <button class="answer correct">Canberra</button>
+          <button class="answer">Melbourne</button>
+          <button class="answer">Perth</button>
+        </div>
+        <div class="jokers">
+          <span class="joker">50 / 50</span>
+          <span class="joker">+ Temps</span>
+          <span class="joker">Passer</span>
+        </div>
+      </div>
+    </div>`;
+
+  const resultScreen = `
+    ${island}
+    <div class="screen">
+      ${statusbar}
+      <div class="content">
+        <div class="rcenter">
+          <div class="rtitle">Bien joué ! 🎉</div>
+          <div class="bigscore">13/15</div>
+          <div class="rbox">
+            <div class="rline"><span>Pièces gagnées</span><b>+195 🪙</b></div>
+            <div class="rline"><span>XP gagné</span><b>+130 XP</b></div>
+            <div class="rline"><span>Meilleure série</span><b>🔥 9</b></div>
+            <div class="rline"><span>Partie rapide</span><b>+30 🪙</b></div>
+          </div>
+          <div class="rbtns">
+            <button class="playbtn">Rejouer</button>
+            <button class="ghostbtn">Accueil</button>
+          </div>
+        </div>
+        <div class="tabbar">
+          <span class="tab">🏠</span><span class="tab on">🎮</span><span class="tab">🛍️</span><span class="tab">🏆</span><span class="tab">👤</span>
+        </div>
+      </div>
+    </div>`;
+
+  const screens = [['Accueil', homeScreen], ['Partie', quizScreen], ['Résultats', resultScreen]];
+
+  const app = document.getElementById('app');
+  app.innerHTML = themes.map(t => `
+    <section class="design ${t.cls}">
+      <div class="design-head">
+        <h2>${t.name}</h2>
+        <p>${t.tag}</p>
+        <div class="palette">
+          ${t.palette.map(([n,h]) => `<span class="swatch"><i style="background:${h}"></i><b>${n}</b> <code>${h}</code></span>`).join('')}
+        </div>
+      </div>
+      <div class="phones">
+        ${screens.map(([cap, html]) => `
+          <div class="phone-wrap">
+            <div class="phone">${html}</div>
+            <span class="cap">${cap}</span>
+          </div>`).join('')}
+      </div>
+    </section>
+  `).join('');
+</script>
+</body>
+</html>

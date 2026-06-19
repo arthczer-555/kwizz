@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kwizz - Catalogue Avatar</title>
+<style>
+  :root {
+    --bg: #161616; --bg2: #101010; --surface: #1b1b1b; --surface2: #202020;
+    --border: #3d3d3d; --text: #f0f0f0; --muted: #6b6b6b; --faint: #3a3a3a;
+    --commun: #9aa0a6; --rare: #38d6ff; --epique: #c084fc; --legendaire: #ffb000;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg2); color: var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: linear-gradient(180deg, var(--bg) 0%, rgba(22,22,22,0.92) 100%);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--faint);
+    padding: 18px 24px 14px;
+  }
+  h1 { margin: 0; font-size: 18px; letter-spacing: 1px; }
+  h1 .accentDot { color: var(--accent, #00ff88); }
+  .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .controls { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+  .controls label { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .controls input[type=range] { accent-color: var(--accent, #00ff88); }
+  .swatches { display: flex; gap: 8px; }
+  .swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--faint); cursor: pointer; }
+  .swatch.active { border-color: var(--text); }
+  main { padding: 24px; max-width: 1280px; margin: 0 auto; }
+  .slot-title {
+    margin: 36px 0 14px; font-size: 14px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--text); border-left: 3px solid var(--accent, #00ff88); padding-left: 10px;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .slot-title span { color: var(--muted); font-size: 11px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--faint); border-radius: 10px;
+    padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+    position: relative; overflow: hidden; transition: transform .12s, border-color .12s;
+  }
+  .card:hover { transform: translateY(-3px); border-color: var(--rarity); }
+  .card .rar-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--rarity); }
+  .stage {
+    background:
+      repeating-linear-gradient(45deg, #1313 0 8px, #0e0e0e 8px 16px);
+    border-radius: 8px; width: 132px; height: 137px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--faint);
+  }
+  .stage svg { width: 128px; height: 133px; display: block; }
+  .name { font-size: 12px; text-align: center; line-height: 1.3; min-height: 30px; display: flex; align-items: center; }
+  .meta { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+  .rar { color: var(--rarity); text-transform: capitalize; }
+  .price { color: var(--muted); }
+  .price.coin::before { content: "◎ "; color: var(--legendaire); }
+  .price.lvl { color: var(--rare); }
+  .id { position: absolute; bottom: 6px; right: 8px; font-size: 9px; color: var(--faint); }
+  .showcase { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 16px; }
+  .showcase .stage { width: 160px; height: 166px; }
+  .showcase .stage svg { width: 160px; height: 166px; }
+  .showcase figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .showcase figcaption { font-size: 11px; color: var(--muted); }
+  footer { color: var(--faint); font-size: 11px; text-align: center; padding: 30px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kwizz <span class="accentDot">▮</span> Catalogue Avatar</h1>
+  <div class="sub">48 cosmétiques procéduraux, rendus en SVG. Aperçu fidèle de <code>AvatarKit.swift</code>.</div>
+  <div class="controls">
+    <label>Niveau du perso
+      <input id="level" type="range" min="1" max="20" value="8">
+      <b id="levelVal">8</b>
+    </label>
+    <label>Couleur d'accent
+      <span class="swatches" id="swatches"></span>
+    </label>
+  </div>
+</header>
+<main id="app"></main>
+<footer>Généré localement · double-clique ce fichier pour le rouvrir · les visuels reflètent le rendu procédural de l'app.</footer>
+
+<script>
+// ---------------------------------------------------------------------------
+// Catalogue : copie 1:1 de AvatarItem.catalog (Sources/KwizzCore/AvatarItem.swift)
+// ---------------------------------------------------------------------------
+const CATALOG = [
+  // Tête
+  ["tete.bob","Bob bucket","tete","commun",65,null],
+  ["tete.casquette","Casquette","tete","commun",80,null],
+  ["tete.bonnet","Bonnet à pompon","tete","commun",120,null],
+  ["tete.beret","Béret d'intello","tete","rare",190,null],
+  ["tete.hautdeforme","Haut-de-forme","tete","rare",260,null],
+  ["tete.casque","Casque audio rétro","tete","rare",320,null],
+  ["tete.toque","Toque de chef","tete","epique",480,null],
+  ["tete.aureole","Auréole clignotante","tete","epique",700,null],
+  ["tete.couronne","Couronne","tete","legendaire",0,20],
+  // Cheveux
+  ["cheveux.couettes","Couettes","cheveux","commun",95,null],
+  ["cheveux.banane","Banane gominée","cheveux","commun",110,null],
+  ["cheveux.afro","Coupe afro","cheveux","rare",220,null],
+  ["cheveux.tresses","Tresses arc-en-ciel","cheveux","rare",280,null],
+  ["cheveux.mulet","Mulet assumé","cheveux","epique",460,null],
+  ["cheveux.mohawk","Mohawk néon","cheveux","epique",540,null],
+  ["cheveux.flammes","Cheveux en flammes","cheveux","legendaire",1800,null],
+  ["cheveux.hologramme","Chevelure hologramme","cheveux","legendaire",0,10],
+  // Lunettes
+  ["lunettes.carrees","Lunettes carrées","lunettes","commun",70,null],
+  ["lunettes.rondes","Lunettes rondes","lunettes","commun",90,null],
+  ["lunettes.soleil","Lunettes de soleil","lunettes","commun",130,null],
+  ["lunettes.neon","Lunettes néon","lunettes","rare",200,null],
+  ["lunettes.aviateur","Aviateur miroir","lunettes","rare",290,null],
+  ["lunettes.monocle","Monocle de génie","lunettes","epique",450,null],
+  ["lunettes.masque","Masque arcade","lunettes","epique",600,null],
+  ["lunettes.cyber","Visière cyberpunk","lunettes","epique",780,null],
+  ["lunettes.lasers","Lunettes à lasers","lunettes","legendaire",2200,null],
+  // Haut
+  ["haut.tshirt","T-shirt blanc","haut","commun",40,null],
+  ["haut.marin","Marinière","haut","commun",120,null],
+  ["haut.pull","Pull pixel","haut","commun",140,null],
+  ["haut.hawaii","Chemise hawaïenne","haut","rare",240,null],
+  ["haut.bomber","Bomber satin","haut","rare",330,null],
+  ["haut.veste","Veste arcade","haut","rare",350,null],
+  ["haut.costume","Costume","haut","epique",720,null],
+  ["haut.smoking","Smoking pailleté","haut","epique",820,null],
+  ["haut.armure","Armure de champion","haut","legendaire",0,5],
+  // Fond
+  ["fond.uni","Fond uni","fond","commun",50,null],
+  ["fond.degrade","Fond dégradé","fond","commun",75,null],
+  ["fond.grille","Grille rétro","fond","rare",180,null],
+  ["fond.etoiles","Ciel étoilé","fond","rare",230,null],
+  ["fond.crt","Fond CRT","fond","epique",500,null],
+  ["fond.synthwave","Fond synthwave","fond","epique",520,null],
+  ["fond.galaxie","Galaxie tourbillon","fond","epique",760,null],
+  ["fond.trounoir","Trou noir animé","fond","legendaire",3000,null],
+  // Cadre
+  ["cadre.bois","Cadre bois","cadre","commun",60,null],
+  ["cadre.argent","Cadre argent","cadre","rare",210,null],
+  ["cadre.vert","Cadre vert","cadre","rare",300,null],
+  ["cadre.flammes","Cadre flammes","cadre","epique",470,null],
+  ["cadre.glace","Cadre de glace","cadre","epique",510,null],
+  ["cadre.diamant","Cadre diamant","cadre","epique",880,null],
+  ["cadre.arcenciel","Cadre arc-en-ciel","cadre","legendaire",0,10],
+  ["cadre.or","Cadre or","cadre","legendaire",0,15],
+].map(([id,name,slot,rarity,price,unlock]) => ({id,name,slot,rarity,price,unlock}));
+
+const SLOTS = [
+  ["fond","Fond"],["haut","Haut"],["cheveux","Cheveux"],
+  ["lunettes","Lunettes"],["tete","Tête"],["cadre","Cadre"],
+];
+const RARITY = { commun:"#9aa0a6", rare:"#38d6ff", epique:"#c084fc", legendaire:"#ffb000" };
+const ACCENTS = [["#00ff88","Vert"],["#ffb000","Ambre"],["#38d6ff","Cyan"],["#f0f0f0","Mono"]];
+
+// Palette (calquée sur Pal / Theme dans le code Swift)
+const C = {
+  surface:"#1b1b1b", surface2:"#202020", text:"#f0f0f0", muted:"#6b6b6b", faint:"#3a3a3a", bad:"#ff5066",
+  cloth1:"#2c2c2c", cloth2:"#242424", cloth3:"#141414", hair:"#2f2f2f", hat:"#272727",
+  gold:"#ffb000", green:"#00ff88", epic:"#c084fc",
+};
+
+// État global
+let LEVEL = 8;
+let ACCENT = "#00ff88";
+
+// ---------------------------------------------------------------------------
+// Helpers SVG
+// ---------------------------------------------------------------------------
+function rect(cx,cy,w,h,fill,o={}) {
+  const x=cx-w/2, y=cy-h/2;
+  const attrs = [`x="${x}"`,`y="${y}"`,`width="${w}"`,`height="${h}"`];
+  if (o.rx) attrs.push(`rx="${o.rx}"`);
+  if (fill) attrs.push(`fill="${fill}"`); else attrs.push(`fill="none"`);
+  if (o.stroke) attrs.push(`stroke="${o.stroke}" stroke-width="${o.sw||1}"`);
+  if (o.opacity!=null) attrs.push(`opacity="${o.opacity}"`);
+  if (o.rot) attrs.push(`transform="rotate(${o.rot} ${cx} ${cy})"`);
+  if (o.filter) attrs.push(`filter="${o.filter}"`);
+  return `<rect ${attrs.join(" ")}/>`;
+}
+function circ(cx,cy,d,fill,o={}) {
+  const attrs=[`cx="${cx}"`,`cy="${cy}"`,`r="${d/2}"`];
+  if (fill) attrs.push(`fill="${fill}"`); else attrs.push(`fill="none"`);
+  if (o.stroke) attrs.push(`stroke="${o.stroke}" stroke-width="${o.sw||1}"`);
+  if (o.opacity!=null) attrs.push(`opacity="${o.opacity}"`);
+  if (o.filter) attrs.push(`filter="${o.filter}"`);
+  return `<circle ${attrs.join(" ")}/>`;
+}
+function elli(cx,cy,w,h,fill,o={}) {
+  const attrs=[`cx="${cx}"`,`cy="${cy}"`,`rx="${w/2}"`,`ry="${h/2}"`];
+  if (fill) attrs.push(`fill="${fill}"`); else attrs.push(`fill="none"`);
+  if (o.stroke) attrs.push(`stroke="${o.stroke}" stroke-width="${o.sw||1}"`);
+  if (o.opacity!=null) attrs.push(`opacity="${o.opacity}"`);
+  if (o.rot) attrs.push(`transform="rotate(${o.rot} ${cx} ${cy})"`);
+  if (o.filter) attrs.push(`filter="${o.filter}"`);
+  return `<ellipse ${attrs.join(" ")}/>`;
+}
+function path(d,fill,o={}) {
+  const attrs=[`d="${d}"`];
+  if (fill) attrs.push(`fill="${fill}"`); else attrs.push(`fill="none"`);
+  if (o.stroke) attrs.push(`stroke="${o.stroke}" stroke-width="${o.sw||1}"`);
+  if (o.cap) attrs.push(`stroke-linecap="${o.cap}"`);
+  if (o.opacity!=null) attrs.push(`opacity="${o.opacity}"`);
+  if (o.filter) attrs.push(`filter="${o.filter}"`);
+  return `<path ${attrs.join(" ")}/>`;
+}
+function line(x1,y1,x2,y2,stroke,sw=1,o={}) {
+  let a=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${sw}"`;
+  if (o.cap) a+=` stroke-linecap="${o.cap}"`;
+  if (o.filter) a+=` filter="${o.filter}"`;
+  if (o.opacity!=null) a+=` opacity="${o.opacity}"`;
+  return a+"/>";
+}
+
+// ---------------------------------------------------------------------------
+// Niveau -> traits du visage (port de levelTraits)
+// ---------------------------------------------------------------------------
+function levelTraits(level) {
+  const l = Math.min(Math.max(level,1),20);
+  const aura = (l-1)/19;
+  let eyes, mouth;
+  if (l<=3) { eyes="dazed"; mouth="agape"; }
+  else if (l<=7) { eyes="plain"; mouth="flat"; }
+  else if (l<=12) { eyes="focused"; mouth="smile"; }
+  else if (l<=17) { eyes="sharp"; mouth="smirk"; }
+  else { eyes="glow"; mouth="line"; }
+  return { eyes, mouth, aura };
+}
+
+function baseBody(t) {
+  const stroke = t.aura > 0.6 ? ACCENT : C.faint;
+  return rect(80,109,66,74,C.surface2,{rx:18,stroke,sw:1})
+       + circ(80,46,42,C.surface2,{stroke,sw:1});
+}
+function auraGlow(t) {
+  let s = circ(80,46,64,ACCENT,{opacity:(t.aura*0.45).toFixed(3),filter:"url(#blur20)"});
+  if (t.aura>0.85) s += circ(80,46,58,null,{stroke:ACCENT,sw:1.5,opacity:0.7});
+  return s;
+}
+function eyes(s) {
+  const lx=72, rx=88, y=44;
+  switch(s){
+    case "dazed": return circ(lx-1,y,6,C.text)+circ(rx+1,y+1,3,C.text);
+    case "plain": return circ(lx,y,4,C.text)+circ(rx,y,4,C.text);
+    case "focused": return rect(lx,y,4,7,C.text,{rx:2})+rect(rx,y,4,7,C.text,{rx:2});
+    case "sharp": return rect(lx,y,10,2.5,C.text,{rot:16})+rect(rx,y,10,2.5,C.text,{rot:-16});
+    case "glow": return circ(lx,y,5,ACCENT)+circ(rx,y,5,ACCENT)
+        +circ(lx,y,5,ACCENT,{opacity:0.9,filter:"url(#blur4)"})+circ(rx,y,5,ACCENT,{opacity:0.9,filter:"url(#blur4)"});
+  }
+}
+function mouth(s) {
+  const mx=80, my=55;
+  switch(s){
+    case "agape": return elli(mx,my,8,9,"#0c0c0c",{stroke:"rgba(240,240,240,0.5)",sw:1});
+    case "flat": return rect(mx,my,12,2,C.text,{rx:1});
+    case "smile": return path(`M72 ${my-5} Q80 ${my+4.8} 88 ${my-5}`,null,{stroke:C.text,sw:2,cap:"round"});
+    case "smirk": return rect(mx,my,12,2,C.text,{rx:1,rot:-12});
+    case "line": return rect(mx,my,14,2,C.text,{rx:1});
+  }
+}
+function face(t) { return eyes(t.eyes)+mouth(t.mouth); }
+
+// ---------------------------------------------------------------------------
+// Rendu par slot (port de AvatarKit) - retourne un fragment SVG
+// uid = identifiant unique pour les <defs> (évite les collisions d'id)
+// ---------------------------------------------------------------------------
+function fondLayer(id, uid) {
+  switch(id) {
+    case "fond.uni": return rect(80,83,160,166,C.surface);
+    case "fond.degrade":
+      return `<defs><linearGradient id="${uid}g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#243b55"/><stop offset="1" stop-color="#141e30"/></linearGradient></defs>`
+        + rect(80,83,160,166,`url(#${uid}g)`);
+    case "fond.grille": {
+      let g = rect(80,83,160,166,"#121212");
+      for (let x=0;x<=160;x+=16) g+=line(x,0,x,166,ACCENT,1,{opacity:0.25});
+      for (let y=0;y<=166;y+=16) g+=line(0,y,160,y,ACCENT,1,{opacity:0.25});
+      return g;
+    }
+    case "fond.etoiles": {
+      let g = `<defs><linearGradient id="${uid}g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0b1026"/><stop offset="1" stop-color="#05060f"/></linearGradient></defs>`
+        + rect(80,83,160,166,`url(#${uid}g)`);
+      for (let i=0;i<22;i++) g+=circ((i*37)%160,(i*53)%166, i%3===0?2.5:1.5, "#fff",{opacity:0.85});
+      return g;
+    }
+    case "fond.crt": {
+      let g = rect(80,83,160,166,"#0d0d0d");
+      for (let y=0;y<166;y+=4) g+=line(0,y,160,y,"#fff",1,{opacity:0.05});
+      g += `<defs><radialGradient id="${uid}v"><stop offset="0.3" stop-color="#000" stop-opacity="0"/>
+        <stop offset="1" stop-color="#000" stop-opacity="0.6"/></radialGradient></defs>`
+        + rect(80,83,160,166,`url(#${uid}v)`);
+      return g;
+    }
+    case "fond.synthwave": {
+      let g = `<defs><linearGradient id="${uid}g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1a0f2e"/><stop offset="1" stop-color="#0d0d12"/></linearGradient></defs>`
+        + rect(80,83,160,166,`url(#${uid}g)`);
+      const horizon = 95; let gap=6;
+      for (let y=horizon;y<166;) { g+=line(0,y,160,y,C.epic,1,{opacity:0.45}); y+=gap; gap+=3; }
+      for (let x=0;x<=160;x+=20) g+=line(x,166,80,horizon,C.epic,1,{opacity:0.45});
+      return g;
+    }
+    case "fond.galaxie": {
+      let g = rect(80,83,160,166,"#05030d")
+        + `<defs><radialGradient id="${uid}r"><stop offset="0" stop-color="${C.epic}" stop-opacity="0.7"/>
+        <stop offset="0.5" stop-color="#38d6ff" stop-opacity="0.25"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>`
+        + circ(80,83,180,`url(#${uid}r)`);
+      g += elli(80,83,120,40,null,{stroke:"rgba(255,255,255,0.35)",sw:1.2,rot:25});
+      g += elli(80,83,120,40,null,{stroke:"rgba(255,255,255,0.25)",sw:1,rot:115});
+      return g;
+    }
+    case "fond.trounoir": {
+      let g = rect(80,83,160,166,"#000");
+      g += circ(80,46,70,null,{stroke:C.gold,sw:6,opacity:0.9,filter:"url(#blur3)"});
+      g += circ(80,46,56,"#000");
+      g += `<defs><radialGradient id="${uid}v"><stop offset="0.25" stop-color="#000" stop-opacity="0"/>
+        <stop offset="1" stop-color="#000"/></radialGradient></defs>` + rect(80,83,160,166,`url(#${uid}v)`);
+      return g;
+    }
+  }
+  return "";
+}
+
+// clip pour le torse (haut)
+function torsoClip(uid) {
+  return `<defs><clipPath id="${uid}c">${rect(80,110,62,70,"#000",{rx:16})}</clipPath></defs>`;
+}
+function hautLayer(id, uid) {
+  const shape = (fill,extra="") => `<g clip-path="url(#${uid}c)">${rect(80,110,62,70,fill,{rx:16})}${extra}</g>`;
+  switch(id) {
+    case "haut.tshirt": return torsoClip(uid)+shape("#e8e8e8");
+    case "haut.marin": {
+      let st=""; for (let i=0;i<5;i++) st+=rect(80,86+i*11,56,4,"#1f3a8a");
+      return torsoClip(uid)+shape("#f0f0f0",st);
+    }
+    case "haut.pull":
+      return torsoClip(uid)+shape(C.cloth1, rect(80,80,18,2,"rgba(107,107,107,0.6)"));
+    case "haut.hawaii": {
+      let d=""; for (let i=0;i<6;i++) d+=circ(62+(i%3)*18,90+Math.floor(i/3)*24,7,"#ff7a59");
+      d += rect(80,110,2,60,"rgba(240,240,240,0.4)");
+      return torsoClip(uid)+shape("#1aa3a3",d);
+    }
+    case "haut.bomber":
+      return torsoClip(uid)+shape("#3a2f4a",
+        rect(80,78,62,6,ACCENT)+rect(80,142,56,5,ACCENT)+rect(80,112,2,56,C.faint));
+    case "haut.veste":
+      return torsoClip(uid)+shape(C.cloth2,
+        rect(80,112,2,56,"rgba(107,107,107,0.7)")
+        +rect(70,82,16,2,C.faint,{rot:28})+rect(90,82,16,2,C.faint,{rot:-28}));
+    case "haut.costume":
+      return torsoClip(uid)+shape(C.cloth3,
+        rect(72,81,13,2,C.text,{rot:30})+rect(88,81,13,2,C.text,{rot:-30})
+        +path("M75 86 L85 86 L82 108 L80 107 L78 108 Z",ACCENT));
+    case "haut.smoking": {
+      let sp=""; for (let i=0;i<10;i++) sp+=circ(58+((i*7)%44),84+((i*13)%56),2.5,"rgba(255,255,255,0.8)");
+      return torsoClip(uid)+shape(C.cloth3, sp
+        +rect(72,81,13,2,C.text,{rot:30})+rect(88,81,13,2,C.text,{rot:-30})
+        +path("M74 84 L86 84 L83 90 L77 90 Z",ACCENT));
+    }
+    case "haut.armure":
+      return torsoClip(uid)+shape("#9aa3ac",
+        rect(80,110,62,70,null,{rx:16})
+        +`<defs><linearGradient id="${uid}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8c0c8"/><stop offset="1" stop-color="#7c858f"/></linearGradient></defs>`
+        +rect(80,110,62,70,`url(#${uid}a)`)
+        +rect(80,112,2,56,"rgba(255,255,255,0.5)")
+        +rect(80,84,56,3,"#5a626b")
+        +starPath(80,96,9,C.gold));
+  }
+  return "";
+}
+
+function cheveuxLayer(id, uid) {
+  switch(id) {
+    case "cheveux.couettes":
+      return rect(80,24,46,18,C.hair,{rx:9})+circ(54,34,16,C.hair)+circ(106,34,16,C.hair);
+    case "cheveux.banane":
+      return path("M56,33 Q80,-0.8 104,20 Q80,33 56,33 Z",C.hair,{stroke:C.faint,sw:1});
+    case "cheveux.afro":
+      return elli(80,26,54,34,C.hair,{stroke:C.faint,sw:1});
+    case "cheveux.tresses": {
+      const grad = `<defs><linearGradient id="${uid}r" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="red"/><stop offset="0.2" stop-color="orange"/><stop offset="0.4" stop-color="yellow"/>
+        <stop offset="0.6" stop-color="green"/><stop offset="0.8" stop-color="blue"/><stop offset="1" stop-color="purple"/></linearGradient></defs>`;
+      return grad + rect(80,24,46,18,C.hair,{rx:9})
+        + rect(56,52,8,40,`url(#${uid}r)`,{rx:4}) + rect(104,52,8,40,`url(#${uid}r)`,{rx:4});
+    }
+    case "cheveux.mulet":
+      return elli(80,22,50,22,C.hair)+path("M53,30 L62.7,70 Q80,62 97.3,70 L107,30 Z",C.hair);
+    case "cheveux.mohawk":
+      return path("M71,35 L73.25,5 L75.5,35 L77.75,10 L80,35 L82.25,5 L84.5,35 L86.75,10 L89,35 Z",ACCENT,{filter:"url(#blur3)"})
+        + path("M71,35 L73.25,5 L75.5,35 L77.75,10 L80,35 L82.25,5 L84.5,35 L86.75,10 L89,35 Z",ACCENT);
+    case "cheveux.flammes": {
+      const grad=`<defs><linearGradient id="${uid}f" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#ff3b00"/><stop offset="0.5" stop-color="#ffb000"/><stop offset="1" stop-color="#ffe600"/></linearGradient></defs>`;
+      const d="M55,38 Q55,18 63.33,-2 Q71.67,18 71.67,38 Q71.67,18 80,6 Q88.33,18 88.33,38 Q88.33,18 96.67,-2 Q105,18 105,38 Z";
+      return grad + path(d,`url(#${uid}f)`,{filter:"url(#glowO)"});
+    }
+    case "cheveux.hologramme": {
+      const grad=`<defs><linearGradient id="${uid}h" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="${C.epic}" stop-opacity="0.55"/><stop offset="1" stop-color="#38d6ff" stop-opacity="0.55"/></linearGradient></defs>`;
+      return grad + elli(80,24,54,32,`url(#${uid}h)`,{stroke:"rgba(56,214,255,0.8)",sw:1,filter:"url(#glowC)"});
+    }
+  }
+  return "";
+}
+
+function lunettesLayer(id, uid) {
+  const lx=72, rx=88, y=44;
+  switch(id) {
+    case "lunettes.carrees":
+      return rect(lx,y,13,11,null,{rx:2,stroke:C.text,sw:1.5})+rect(rx,y,13,11,null,{rx:2,stroke:C.text,sw:1.5})+rect(80,y,6,1.5,C.text);
+    case "lunettes.rondes":
+      return circ(lx,y,13,null,{stroke:C.text,sw:1.5})+circ(rx,y,13,null,{stroke:C.text,sw:1.5})+rect(80,y,6,1.5,C.text);
+    case "lunettes.soleil":
+      return rect(lx,y,14,11,"#0c0c0c",{rx:3})+rect(rx,y,14,11,"#0c0c0c",{rx:3})+rect(80,y,6,2,"#0c0c0c");
+    case "lunettes.neon":
+      return circ(lx,y,13,null,{stroke:ACCENT,sw:1.5,filter:"url(#glow)"})+circ(rx,y,13,null,{stroke:ACCENT,sw:1.5,filter:"url(#glow)"})+rect(80,y,6,1.5,ACCENT,{filter:"url(#glow)"});
+    case "lunettes.aviateur":
+      return path("M65,39 L79,39 Q79,51 72,51 Q65,45 65,39 Z","rgba(159,217,255,0.85)",{stroke:C.gold,sw:1.2})
+        + path("M81,39 L95,39 Q95,51 88,51 Q81,45 81,39 Z","rgba(159,217,255,0.85)",{stroke:C.gold,sw:1.2})
+        + rect(80,y,6,1.5,C.gold);
+    case "lunettes.monocle":
+      return circ(rx,y,15,"rgba(255,255,255,0.12)",{stroke:C.gold,sw:1.8}) + line(rx,y+8,rx-4,70,C.gold,1);
+    case "lunettes.masque":
+      return rect(80,y,40,13,"#0c0c0c",{rx:3,stroke:ACCENT,sw:1}) + rect(80,y,32,1.5,ACCENT,{opacity:0.7});
+    case "lunettes.cyber": {
+      const grad=`<defs><linearGradient id="${uid}v" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="${C.epic}"/><stop offset="1" stop-color="#38d6ff"/></linearGradient></defs>`;
+      return grad + path("M58,44 L102,38 L102,47 Q80,50 58,47 Z",`url(#${uid}v)`,{stroke:"rgba(240,240,240,0.6)",sw:1,filter:"url(#glowP)"});
+    }
+    case "lunettes.lasers":
+      return rect(80,y,40,10,"#111") + circ(lx,y,8,C.bad)+circ(rx,y,8,C.bad)
+        + rect(lx-24,y,70,2,C.bad,{filter:"url(#glowR)"}) + rect(rx+24,y,70,2,C.bad,{filter:"url(#glowR)"});
+  }
+  return "";
+}
+
+function teteLayer(id, uid) {
+  switch(id) {
+    case "tete.bob":
+      return elli(80,32,50,10,C.hat)+rect(80,24,40,22,C.hat,{rx:12})+rect(80,30,40,3,C.faint);
+    case "tete.casquette":
+      return path("M57,39 A23,23 0 0 1 103,39 Z",C.hat) + elli(96,33,26,7,"#1c1c1c");
+    case "tete.bonnet":
+      return rect(80,25,46,26,C.hat,{rx:10})+rect(80,35,46,5,C.faint)+circ(80,10,9,C.hat);
+    case "tete.beret":
+      return elli(80,24,46,22,"#1f1f1f",{rot:-10})+circ(80,13,6,C.hat);
+    case "tete.hautdeforme":
+      return elli(80,27,50,9,C.cloth3)+rect(80,14,32,26,C.cloth3)+rect(80,22,32,4,C.bad,{opacity:0.7});
+    case "tete.casque":
+      return path("M52,50 A28,28 0 0 1 108,50",null,{stroke:C.cloth1,sw:5})
+        + rect(53,40,11,18,ACCENT,{rx:4}) + rect(107,40,11,18,ACCENT,{rx:4});
+    case "tete.toque":
+      return rect(80,30,38,14,"#f4f4f4",{rx:7})+circ(71,17,18,"#f4f4f4")+circ(88,15,22,"#f4f4f4")+circ(80,12,16,"#fff");
+    case "tete.aureole":
+      return elli(80,11,40,12,null,{stroke:C.gold,sw:6,opacity:0.6,filter:"url(#blur4)"})
+        + elli(80,11,40,12,null,{stroke:C.gold,sw:3});
+    case "tete.couronne":
+      return path("M60,33 L60,23 L70,24 L80,13 L90,24 L100,23 L100,33 Z",C.gold,{filter:"url(#glowG)"});
+  }
+  return "";
+}
+
+function cadreLayer(id, uid) {
+  switch(id) {
+    case "cadre.bois": return rect(80,83,156,162,null,{stroke:"#7a4a24",sw:4});
+    case "cadre.argent": return rect(80,83,158,164,null,{stroke:"#c8ccd0",sw:2})+rect(80,83,152,158,null,{stroke:"#8a9098",sw:1,opacity:0.6});
+    case "cadre.vert": return rect(80,83,158,164,null,{stroke:C.green,sw:2});
+    case "cadre.flammes": {
+      const grad=`<defs><linearGradient id="${uid}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff3b00"/><stop offset="1" stop-color="#ffb000"/></linearGradient></defs>`;
+      return grad + rect(80,83,158,164,null,{stroke:`url(#${uid}f)`,sw:3,filter:"url(#glowO)"});
+    }
+    case "cadre.glace": {
+      const grad=`<defs><linearGradient id="${uid}i" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fe8ff"/><stop offset="1" stop-color="#38d6ff"/></linearGradient></defs>`;
+      return grad + rect(80,83,158,164,null,{stroke:`url(#${uid}i)`,sw:2.5,filter:"url(#glowC)"});
+    }
+    case "cadre.diamant": {
+      let d = rect(80,83,158,164,null,{stroke:"#dff6ff",sw:2});
+      const corners=[[6,6],[154,6],[6,160],[154,160]];
+      for (const [x,y] of corners) d+=path(`M${x},${y-4} L${x+4},${y} L${x},${y+4} L${x-4},${y} Z`,"#9fe8ff");
+      return `<g filter="url(#glowC)">${d}</g>`;
+    }
+    case "cadre.arcenciel": {
+      const grad=`<defs><linearGradient id="${uid}rb" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="red"/><stop offset="0.2" stop-color="orange"/><stop offset="0.4" stop-color="yellow"/>
+        <stop offset="0.6" stop-color="green"/><stop offset="0.8" stop-color="blue"/><stop offset="1" stop-color="purple"/></linearGradient></defs>`;
+      return grad + rect(80,83,158,164,null,{stroke:`url(#${uid}rb)`,sw:3,filter:"url(#glowP)"});
+    }
+    case "cadre.or": return rect(80,83,158,164,null,{stroke:C.gold,sw:2})+rect(80,83,152,158,null,{stroke:C.gold,sw:1,opacity:0.4});
+  }
+  return "";
+}
+
+function starPath(cx,cy,outer,fill) {
+  const inner=outer*0.45; let pts=[];
+  for (let i=0;i<10;i++){
+    const ang=-Math.PI/2 + i*Math.PI/5;
+    const r = i%2===0?outer:inner;
+    pts.push(`${(cx+Math.cos(ang)*r).toFixed(2)},${(cy+Math.sin(ang)*r).toFixed(2)}`);
+  }
+  return `<path d="M${pts.join(" L")} Z" fill="${fill}"/>`;
+}
+
+// Filtres partagés (glow / blur)
+const DEFS = `
+<defs>
+  <filter id="blur3" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="blur4" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5"/></filter>
+  <filter id="blur20" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="10"/></filter>
+  <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="${C.green}"/></filter>
+  <filter id="glowG" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="${C.gold}"/></filter>
+  <filter id="glowO" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#ff6a00"/></filter>
+  <filter id="glowC" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#38d6ff"/></filter>
+  <filter id="glowP" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="${C.epic}"/></filter>
+  <filter id="glowR" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="${C.bad}"/></filter>
+</defs>`;
+
+// Compose l'avatar complet (fond -> corps -> haut -> cheveux -> visage -> lunettes -> tete -> cadre)
+function composeSVG(items, uid) {
+  const t = levelTraits(LEVEL);
+  let layers = "";
+  if (items.fond) layers += fondLayer(items.fond, uid+"f");
+  layers += auraGlow(t);
+  layers += baseBody(t);
+  if (items.haut) layers += hautLayer(items.haut, uid+"t");
+  if (items.cheveux) layers += cheveuxLayer(items.cheveux, uid+"h");
+  layers += face(t);
+  if (items.lunettes) layers += lunettesLayer(items.lunettes, uid+"l");
+  if (items.tete) layers += teteLayer(items.tete, uid+"g");
+  if (items.cadre) layers += cadreLayer(items.cadre, uid+"c");
+  return `<svg viewBox="0 0 160 166" xmlns="http://www.w3.org/2000/svg">${DEFS}${layers}</svg>`;
+}
+function itemSVG(item, uid) {
+  return composeSVG({ [item.slot]: item.id }, uid);
+}
+
+// ---------------------------------------------------------------------------
+// Construction de la page
+// ---------------------------------------------------------------------------
+function priceLabel(item) {
+  if (item.unlock != null) return `<span class="price lvl">Niv. ${item.unlock}</span>`;
+  return `<span class="price coin">${item.price}</span>`;
+}
+
+function render() {
+  document.documentElement.style.setProperty("--accent", ACCENT);
+  const app = document.getElementById("app");
+  let html = "";
+
+  // Showcase : avatars complets équipés
+  const looks = [
+    {name:"Niveau 1", items:{}},
+    {name:"Geek néon", items:{lunettes:"lunettes.neon",cheveux:"cheveux.mohawk",haut:"haut.veste",fond:"fond.synthwave"}},
+    {name:"Royal", items:{tete:"tete.couronne",haut:"haut.costume",lunettes:"lunettes.aviateur",fond:"fond.galaxie",cadre:"cadre.or"}},
+    {name:"Champion", items:{tete:"tete.aureole",haut:"haut.armure",cheveux:"cheveux.flammes",fond:"fond.trounoir",cadre:"cadre.arcenciel"}},
+  ];
+  html += `<div class="slot-title">Avatars équipés <span>· exemples de combinaisons</span></div><div class="showcase">`;
+  looks.forEach((l,i) => {
+    html += `<figure><div class="stage">${composeSVG(l.items, "sc"+i)}</div><figcaption>${l.name}</figcaption></figure>`;
+  });
+  html += `</div>`;
+
+  // Une section par slot
+  for (const [slot, title] of SLOTS) {
+    const items = CATALOG.filter(it => it.slot === slot);
+    html += `<div class="slot-title">${title} <span>· ${items.length} items</span></div><div class="grid">`;
+    items.forEach((item,idx) => {
+      const rc = RARITY[item.rarity];
+      html += `<div class="card" style="--rarity:${rc}">
+        <div class="rar-bar"></div>
+        <div class="stage">${itemSVG(item, slot+idx)}</div>
+        <div class="name">${item.name}</div>
+        <div class="meta"><span class="rar">${item.rarity}</span> · ${priceLabel(item)}</div>
+        <div class="id">${item.id}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  app.innerHTML = html;
+}
+
+// Contrôles
+function buildSwatches() {
+  const box = document.getElementById("swatches");
+  box.innerHTML = ACCENTS.map(([c,n]) =>
+    `<span class="swatch${c===ACCENT?' active':''}" data-c="${c}" title="${n}" style="background:${c}"></span>`).join("");
+  box.querySelectorAll(".swatch").forEach(s => s.addEventListener("click", () => {
+    ACCENT = s.dataset.c;
+    C.green = ACCENT; // les filtres glow "vert" suivent l'accent
+    buildSwatches(); render();
+  }));
+}
+document.getElementById("level").addEventListener("input", e => {
+  LEVEL = +e.target.value;
+  document.getElementById("levelVal").textContent = LEVEL;
+  render();
+});
+
+buildSwatches();
+render();
+</script>
+</body>
+</html>

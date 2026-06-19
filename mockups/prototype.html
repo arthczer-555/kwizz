@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kwizz - Prototype interactif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg:#161616; --bg2:#101010; --surface:#1b1b1b; --surface2:#202020;
+    --border:#2a2a2a; --text:#f0f0f0; --muted:#6b6b6b; --faint:#3a3a3a;
+    --accent:#00ff88; --accent-ink:#07150d; --bad:#ff5066;
+    --pixel:'Press Start 2P',monospace; --mono:'Space Mono',monospace; --sans:'Inter',-apple-system,sans-serif;
+  }
+  body.pal-ambre { --accent:#ffb000; --accent-ink:#1a1200; }
+  body.pal-cyan  { --accent:#38d6ff; --accent-ink:#04161c; }
+  body.pal-mono  { --accent:#f0f0f0; --accent-ink:#0c0c0c; }
+
+  body { background:var(--bg2); color:var(--text); font-family:var(--sans); min-height:100vh; padding:26px 16px 60px; display:flex; flex-direction:column; align-items:center; }
+  ::selection { background:var(--accent); color:var(--accent-ink); }
+
+  .toolbar { display:flex; gap:14px; align-items:center; flex-wrap:wrap; justify-content:center; margin-bottom:22px; }
+  .toolbar .ti { font-family:var(--pixel); font-size:15px; }
+  .toolbar .ti b { color:var(--accent); }
+  .toolbar .hint { font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .sw { display:flex; gap:6px; }
+  .sw button { font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; background:transparent; color:var(--text); border:1px solid var(--border); padding:6px 9px; cursor:pointer; }
+  .sw button:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* device */
+  .device { width:344px; height:728px; background:#000; border-radius:48px; padding:9px; box-shadow:0 0 0 1px var(--border), 0 30px 60px rgba(0,0,0,.6); }
+  .glass { position:relative; width:100%; height:100%; border-radius:40px; overflow:hidden; background:var(--bg); }
+  .island { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:90px; height:24px; background:#000; border-radius:999px; z-index:80; }
+  .statusbar { position:absolute; top:0; left:0; right:0; height:40px; display:flex; align-items:center; justify-content:space-between; padding:14px 22px 0; font-family:var(--mono); font-size:11px; color:var(--text); z-index:70; pointer-events:none; }
+  .scanline { position:absolute; inset:0; z-index:90; pointer-events:none; background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 3px, rgba(0,0,0,.05) 4px); }
+  .viewport { position:absolute; inset:0; }
+  .screen { position:absolute; inset:0; display:none; flex-direction:column; padding:46px 18px 0; overflow-y:auto; }
+  .screen.active { display:flex; animation:fade .18s ease; }
+  @keyframes fade { from{opacity:0} to{opacity:1} }
+  .screen::-webkit-scrollbar { width:0; }
+
+  /* atoms */
+  .btn { font-family:var(--mono); font-weight:700; font-size:12px; letter-spacing:2px; text-transform:uppercase; background:var(--accent); color:var(--accent-ink); border:1px solid var(--accent); padding:14px 16px; cursor:pointer; text-align:center; }
+  .btn.lg { width:100%; padding:16px; }
+  .btn.ghost { background:transparent; color:var(--text); border-color:var(--border); }
+  .btn.ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .tag { font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; border:1px solid var(--border); color:var(--muted); padding:6px 8px; white-space:nowrap; cursor:pointer; }
+  .tag.on { border-color:var(--accent); color:var(--accent); }
+  .panel { background:var(--surface); border:1px solid var(--border); }
+  .lbl { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+  .mono{font-family:var(--mono)} .px{font-family:var(--pixel)} .acc{color:var(--accent)} .mut{color:var(--muted)}
+  .c::before { content:""; display:inline-block; width:9px; height:9px; border:1.5px solid currentColor; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+  .xpbar { height:7px; background:#0c0c0c; border:1px solid var(--border); overflow:hidden; }
+  .xpbar>i { display:block; height:100%; background:var(--accent); background-image:repeating-linear-gradient(90deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 7px,rgba(0,0,0,.35) 7px,rgba(0,0,0,.35) 8px); }
+  .h { font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:1px; text-transform:uppercase; }
+  .row{display:flex;align-items:center} .between{display:flex;align-items:center;justify-content:space-between} .col{display:flex;flex-direction:column} .grow{flex:1;min-width:0} .center{text-align:center}
+  .sm{font-size:13px} .xs{font-size:12px}
+  .mt6{margin-top:6px}.mt8{margin-top:8px}.mt10{margin-top:10px}.mt12{margin-top:12px}.mt14{margin-top:14px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+  .divtop{border-top:1px solid var(--border)}
+
+  /* header / tabbar */
+  .top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .top .coin { font-family:var(--mono); font-weight:700; font-size:14px; color:var(--accent); }
+  .top .lv { font-family:var(--mono); font-size:10px; letter-spacing:1px; color:var(--muted); border:1px solid var(--border); padding:4px 8px; }
+  .top .gear { color:var(--muted); font-size:15px; cursor:pointer; }
+  .bk { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .bk .b { font-family:var(--mono); font-size:11px; color:var(--text); border:1px solid var(--border); padding:8px 11px; cursor:pointer; }
+  .bk .b:hover { border-color:var(--accent); color:var(--accent); }
+  .tabbar { margin:auto -18px 0; display:flex; justify-content:space-around; padding:11px 6px 16px; border-top:1px solid var(--border); background:var(--bg2); position:sticky; bottom:0; }
+  .tb { display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--muted); cursor:pointer; }
+  .tb .ic{font-size:14px;line-height:1} .tb .tx{font-family:var(--mono);font-size:8px;letter-spacing:1px}
+  .tb.on { color:var(--accent); }
+
+  /* avatar */
+  .stage { position:relative; width:160px; height:166px; margin:0 auto; display:flex; align-items:flex-end; justify-content:center; }
+  .mann { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; margin-bottom:16px; }
+  .mann .head { width:42px; height:42px; border-radius:50%; background:var(--surface2); border:1px solid var(--faint); }
+  .mann .torso { width:66px; height:72px; margin-top:7px; background:var(--surface2); border:1px solid var(--faint); border-radius:26px 26px 12px 12px; }
+  .shadow { position:absolute; bottom:6px; left:50%; transform:translateX(-50%); width:104px; height:20px; border-radius:50%; background:radial-gradient(ellipse at center, rgba(0,0,0,.7) 0%, rgba(0,0,0,.35) 45%, transparent 72%); z-index:1; }
+  .spot { position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:120px; height:26px; border-radius:50%; border:1px dashed var(--faint); z-index:0; }
+
+  /* quiz */
+  .qbox { border:1px solid var(--border); padding:22px 16px; text-align:center; }
+  .q { font-size:18px; font-weight:600; line-height:1.4; }
+  .ans { border:1px solid var(--border); padding:14px; font-family:var(--mono); font-size:13px; display:flex; gap:10px; align-items:center; cursor:pointer; }
+  .ans:hover { border-color:var(--muted); }
+  .ans .k { color:var(--muted); }
+  .ans.ok { border-color:var(--accent); color:var(--accent); } .ans.ok .k{color:var(--accent)}
+  .ans.bad { border-color:var(--bad); color:var(--bad); opacity:.9; } .ans.bad .k{color:var(--bad)}
+  .ans.dim { opacity:.4; }
+  .score { font-family:var(--pixel); color:var(--accent); line-height:1.2; }
+  .tbar { height:6px; background:#0c0c0c; border:1px solid var(--border); overflow:hidden; }
+  .tbar>i { display:block; height:100%; background:var(--accent); width:100%; }
+  .catdot { width:8px; height:8px; border-radius:50%; flex:none; }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <span class="ti">K<b>W</b>IZZ</span>
+    <span class="hint">prototype interactif - clique pour naviguer</span>
+    <div class="sw">
+      <button data-pal="">VERT</button><button data-pal="pal-ambre">AMBRE</button><button data-pal="pal-cyan">CYAN</button><button data-pal="pal-mono">MONO</button>
+    </div>
+  </div>
+
+  <div class="device"><div class="glass">
+    <div class="island"></div>
+    <div class="statusbar"><span>9:41</span><span>5G  100%</span></div>
+    <div class="scanline"></div>
+    <div class="viewport" id="vp"></div>
+  </div></div>
+
+<script>
+  // ---- helpers ----
+  const tabsDef = [['⌂','ACCUEIL','home'],['▷','JOUER','modes'],['◫','SHOP','shop'],['↑','RANG','leaderboard'],['◉','PROFIL','profile']];
+  const tabbar = (active) => `<div class="tabbar">${tabsDef.map(t=>`<div class="tb ${t[2]===active?'on':''}" data-tab="${t[2]}"><span class="ic">${t[0]}</span><span class="tx">${t[1]}</span></div>`).join('')}</div>`;
+  const topbar = (coins='240',lvl='7') => `<div class="top"><span class="coin c">${coins}</span><span class="lv">LVL ${lvl}</span><span class="gear" data-go="settings">⚙</span></div>`;
+  const back = (title) => `<div class="bk"><span class="b" data-back>◀ RETOUR</span><span class="h">${title}</span><span style="width:64px"></span></div>`;
+  const mann = `<div class="stage"><div class="spot"></div><div class="shadow"></div><div class="mann"><div class="head"></div><div class="torso"></div></div></div>`;
+
+  // ---- screens ----
+  const screens = {};
+
+  screens.onboarding = `
+    <div class="col center" style="flex:1;justify-content:center;gap:22px;padding-bottom:30px">
+      <div class="px" style="font-size:36px">K<span class="acc">W</span>IZZ</div>
+      <div class="mono acc" style="font-size:12px;letter-spacing:2px">INSERT&nbsp;COIN</div>
+      ${mann}
+      <div class="mono mut" style="font-size:12px">◀ &nbsp; CHOISIS TON HÉROS &nbsp; ▶</div>
+      <div class="panel" style="padding:13px 14px;width:100%;text-align:left">
+        <div class="lbl">PSEUDO</div><div class="mono" style="font-size:18px;margin-top:6px">RetroKid<span class="acc">_</span></div>
+      </div>
+      <button class="btn lg" data-tab="home">PRESS START</button>
+    </div>`;
+
+  screens.home = `
+    ${topbar()}
+    <div class="col" style="flex:1;align-items:center;justify-content:center">
+      <div data-go="avatar" style="cursor:pointer">${mann}</div>
+      <div class="mono" style="font-weight:700;font-size:17px;margin-top:8px">RetroKid</div>
+      <div class="sm mut" style="margin-top:3px">Abonné à Wikipédia</div>
+      <div style="width:100%;margin-top:14px">
+        <div class="between" style="margin-bottom:6px"><span class="lbl">LVL 7</span><span class="lbl">1360 / 2400 XP</span></div>
+        <div class="xpbar"><i style="width:57%"></i></div>
+      </div>
+    </div>
+    <button class="btn lg" data-go="modes">JOUER</button>
+    <div class="between panel" style="padding:12px 14px;margin-top:12px;cursor:pointer" data-go="defi">
+      <div class="col"><span class="lbl">DÉFI DU JOUR</span><span class="mut xs" style="margin-top:3px">1 essai restant</span></div>
+      <span class="mono acc" style="font-weight:700"><span class="c">+50</span></span>
+    </div>
+    <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:12px">
+      <span class="tag on" data-go="categories">CLASSIQUE</span><span class="tag" data-go="modes">CONTRE-MONTRE</span><span class="tag" data-go="modes">SURVIE</span><span class="tag" data-go="modes">DUEL</span><span class="tag" data-go="modes">LIBRE</span>
+    </div>
+    ${tabbar('home')}`;
+
+  const modesList = [
+    ['CLASSIQUE','15 questions, meilleur score','categories'],
+    ['CONTRE-LA-MONTRE','max de bonnes en 60s','categories'],
+    ['SURVIE','jusqu\'à la 1re erreur','categories'],
+    ['MARATHON','30+ questions, paliers','categories'],
+    ['LIBRE','sans chrono, entraînement','categories'],
+    ['DUEL','1v1 contre un bot','duel'],
+    ['DÉFI DU JOUR','grille du jour, 1 essai','defi'],
+  ];
+  screens.modes = `
+    <div class="between" style="margin-bottom:16px"><span class="h acc">CHOISIS TON MODE</span><span class="coin c mono acc" style="font-size:13px">240</span></div>
+    <div class="col" style="flex:1">
+      ${modesList.map((m,i)=>`<div class="between ${i?'divtop':''}" style="padding:15px 2px;cursor:pointer" data-go="${m[2]}"><div class="col"><span class="mono" style="font-size:13px">${m[0]}</span><span class="mut xs" style="margin-top:4px">${m[1]}</span></div><span class="acc mono">▶</span></div>`).join('')}
+    </div>
+    ${tabbar('modes')}`;
+
+  const cats = [['Histoire','#ffb000'],['Géographie','#38d6ff'],['Sciences','#00ff88'],['Sport','#ff7a3c'],['Ciné & Séries','#fb7185'],['Musique','#c084fc'],['Arts & Litt.','#f0f0f0'],['Actu & Société','#38d6ff'],['Nature','#00ff88'],['Tech & Jeux','#fb7185'],['Gastronomie','#ffb000'],['Pop culture','#c084fc'],['Mythes','#ff7a3c']];
+  screens.categories = `
+    ${back('CATÉGORIES')}
+    <div class="col" style="flex:1">
+      ${cats.map((c,i)=>`<div class="row ${i?'divtop':''}" style="gap:11px;padding:12px 2px;cursor:pointer" data-go="subcategories"><span class="catdot" style="background:${c[1]}"></span><span class="grow sm">${c[0]}</span><span class="mut mono">→</span></div>`).join('')}
+    </div>`;
+
+  const subs = ['Antiquité','Moyen Âge','Époque moderne','Époque contemporaine','Guerres mondiales','Histoire de France'];
+  screens.subcategories = `
+    ${back('HISTOIRE')}
+    <div class="lbl" style="margin-bottom:6px">SOUS-CATÉGORIE</div>
+    <div class="col" style="flex:1">
+      ${subs.map((s,i)=>`<div class="row ${i?'divtop':''}" style="gap:11px;padding:13px 2px;cursor:pointer" data-go="difficulty"><span class="grow sm">${s}</span><span class="mut mono">→</span></div>`).join('')}
+      <div class="row divtop" style="gap:11px;padding:13px 2px;cursor:pointer" data-go="difficulty"><span class="grow sm acc">Tout l'Histoire</span><span class="acc mono">→</span></div>
+    </div>`;
+
+  const diffs = [['FACILE','20s · gain x1'],['NORMAL','15s · gain x1.5'],['DIFFICILE','10s · gain x2.5']];
+  screens.difficulty = `
+    ${back('DIFFICULTÉ')}
+    <div class="mut sm" style="margin-bottom:16px">Plus dur = plus risqué = plus payant.</div>
+    <div class="col" style="gap:12px;flex:1">
+      ${diffs.map((d,i)=>`<div class="panel between dsel" style="padding:18px 16px;cursor:pointer;${i===1?'border-color:var(--accent)':''}"><span class="mono" style="font-size:14px;letter-spacing:1px;${i===1?'color:var(--accent)':''}">${d[0]}</span><span class="lbl">${d[1]}</span></div>`).join('')}
+    </div>
+    <button class="btn lg" data-go="game" style="margin:10px 0 16px">GO</button>`;
+
+  screens.game = `<div id="gamehost" style="flex:1;display:flex;flex-direction:column"></div>`;
+
+  screens.results = `
+    <div class="col center" style="flex:1;justify-content:center">
+      <div class="mono acc" style="font-size:12px;letter-spacing:2px">★ NOUVEAU RECORD ★</div>
+      <div class="lbl" style="margin-top:16px">SCORE</div>
+      <div class="score" id="res-score" style="font-size:50px;margin:10px 0 2px">0</div>
+      <div class="mut mono xs">/ 1000</div>
+      <div class="panel" style="width:100%;margin-top:20px">
+        <div class="between" style="padding:13px 15px"><span class="sm">Bonnes réponses</span><span class="mono acc" id="res-correct">0/5</span></div>
+        <div class="between divtop" style="padding:13px 15px"><span class="sm">Pièces</span><span class="mono acc c" id="res-coins">+0</span></div>
+        <div class="between divtop" style="padding:13px 15px"><span class="sm">XP</span><span class="mono" id="res-xp">+0</span></div>
+      </div>
+      <button class="btn lg" data-go="game" style="margin-top:18px">REJOUER</button>
+      <button class="btn ghost lg" data-tab="home" style="margin-top:9px">ACCUEIL</button>
+      <div class="mut xs mono" style="margin-top:12px;cursor:pointer" data-go="levelup">▶ voir l'écran Level Up</div>
+    </div>`;
+
+  screens.levelup = `
+    <div class="col center" style="flex:1;justify-content:center;gap:16px">
+      <div class="mono acc" style="font-size:13px;letter-spacing:3px">L E V E L &nbsp; U P</div>
+      <div class="score" style="font-size:56px">08</div>
+      ${mann}
+      <div class="panel" style="width:100%;padding:15px;text-align:center"><div class="lbl">NOUVEAU TITRE</div><div class="mono" style="font-size:17px;margin-top:8px">Tête de classe</div></div>
+      <div class="row" style="justify-content:center;gap:30px">
+        <div class="center"><div class="mono acc" style="font-size:16px"><span class="c">+120</span></div><div class="lbl" style="margin-top:5px">PIÈCES</div></div>
+        <div class="center"><div class="mono" style="font-size:16px">+1</div><div class="lbl" style="margin-top:5px">ITEM</div></div>
+      </div>
+      <button class="btn lg" data-tab="home">CONTINUER</button>
+    </div>`;
+
+  const items = [['Haut-de-forme','120',0],['Lunettes','200',0],['Couronne','900',1],['Casquette','80',0],['Veste','350',0],['Fond CRT','500',1]];
+  screens.shop = `
+    ${topbar()}
+    <div class="between" style="margin:4px 0 14px"><span class="h">BOUTIQUE</span><span class="lbl">OFFRE · 11:32</span></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="tag on">TÊTE</span><span class="tag">LUNETTES</span><span class="tag">TENUE</span><span class="tag">FOND</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${items.map(it=>`<div class="panel" style="padding:14px 12px;text-align:center;cursor:pointer;${it[2]?'opacity:.55':''}" data-go="itemDetail"><div style="height:46px;display:grid;place-items:center"><div style="width:34px;height:34px;border:1px solid var(--faint);background:var(--surface2)"></div></div><div class="sm" style="margin-top:8px">${it[0]}</div><div class="mono ${it[2]?'mut':'acc'}" style="font-size:12px;margin-top:7px">${it[2]?'🔒 LVL 12':'<span class="c">'+it[1]+'</span>'}</div></div>`).join('')}
+    </div>
+    ${tabbar('shop')}`;
+
+  screens.itemDetail = `
+    ${back('OBJET')}
+    <div class="col" style="flex:1;align-items:center;justify-content:center;gap:14px">
+      <div class="panel" style="width:120px;height:120px;display:grid;place-items:center"><div style="width:54px;height:54px;border:1px solid var(--faint);background:var(--surface2)"></div></div>
+      <div class="mono" style="font-size:18px">Lunettes néon</div>
+      <span class="tag on">RARE</span>
+      <div class="mut sm center" style="max-width:220px">Une touche rétro sur le nez de ton avatar. Cosmétique uniquement.</div>
+    </div>
+    <div class="between" style="margin:10px 0 16px"><span class="mono acc" style="font-size:18px"><span class="c">200</span></span><button class="btn" data-back>ACHETER</button></div>`;
+
+  screens.avatar = `
+    ${back('VESTIAIRE')}
+    <div class="panel" style="padding:8px;display:grid;place-items:center;margin-bottom:16px">${mann}</div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="tag on">TÊTE</span><span class="tag">CHEVEUX</span><span class="tag">LUNETTES</span><span class="tag">HAUT</span><span class="tag">FOND</span></div>
+    <div class="between" style="gap:10px">
+      <span class="acc mono" style="cursor:pointer">◀</span>
+      <div class="row" style="gap:9px"><div class="panel" style="width:54px;height:54px;border-color:var(--accent)"></div><div class="panel" style="width:54px;height:54px"></div><div class="panel" style="width:54px;height:54px;opacity:.5"></div></div>
+      <span class="acc mono" style="cursor:pointer">▶</span>
+    </div>
+    <button class="btn lg" data-back style="margin:18px 0 16px">ÉQUIPER</button>`;
+
+  const ranks = [['1','MaxooQ','LVL 12','3120',0],['2','Lana','LVL 11','2990',0],['3','K3vin','LVL 10','2710',0],['7','TOI','LVL 7','2380',1],['8','Sofia','LVL 9','2150',0],['9','Tom','LVL 8','1980',0]];
+  screens.leaderboard = `
+    ${topbar()}
+    <div class="h" style="margin:4px 0 12px">CLASSEMENT</div>
+    <div class="row" style="gap:6px;margin-bottom:8px"><span class="tag on">AMIS</span><span class="tag">MONDE</span><span class="tag">CATÉGORIE</span></div>
+    <div class="col" style="flex:1">
+      ${ranks.map((r,i)=>`<div class="row ${i?'divtop':''}" style="gap:12px;padding:13px 4px;${r[4]?'background:var(--surface)':''}"><span class="mono ${i<3?'acc':'mut'}" style="width:18px;font-size:13px">${r[0]}</span><div class="grow"><div class="sm ${r[4]?'acc':''}">${r[1]}</div><div class="lbl" style="margin-top:3px">${r[2]}</div></div><span class="mono" style="font-size:13px">${r[3]}</span></div>`).join('')}
+    </div>
+    ${tabbar('leaderboard')}`;
+
+  const stats = [['PARTIES','342'],['% BONNES','78'],['MEILLEUR','2980'],['SÉRIE MAX','22']];
+  screens.profile = `
+    <div class="between" style="margin-bottom:8px"><span class="h">PROFIL</span><span class="gear mut" data-go="settings" style="cursor:pointer">⚙</span></div>
+    <div class="center">
+      <div data-go="avatar" style="cursor:pointer">${mann}</div>
+      <div class="mono" style="font-weight:700;font-size:16px;margin-top:6px">RetroKid</div>
+      <div class="sm mut">NIV.7 · Abonné à Wikipédia</div>
+      <div style="text-align:left;margin-top:14px">
+        <div class="between" style="margin-bottom:6px"><span class="lbl">LVL 7</span><span class="lbl">1360 / 2400 XP</span></div>
+        <div class="xpbar"><i style="width:57%"></i></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px">
+      ${stats.map(s=>`<div class="panel center" style="padding:13px"><div class="mono acc" style="font-size:17px">${s[1]}</div><div class="lbl" style="margin-top:6px">${s[0]}</div></div>`).join('')}
+    </div>
+    <div class="between" style="margin:16px 0 9px"><span class="lbl">SUCCÈS</span><span class="mut xs mono" data-go="achievements" style="cursor:pointer">tout voir →</span></div>
+    <div class="row" style="gap:9px">${[1,1,1,0,0].map(o=>`<div class="panel" style="width:46px;height:46px;${o?'border-color:var(--accent)':'opacity:.4'}"></div>`).join('')}</div>
+    ${tabbar('profile')}`;
+
+  const achs = [['Première victoire','Gagne ta 1re partie',1],['Sans-faute','Une partie parfaite',1],['Série de 10','10 bonnes d\'affilée',1],['Globe-trotter','100 questions de Géo',0],['Marathonien','Finis un Marathon',0],['Encyclopédie','5000 bonnes réponses',0]];
+  screens.achievements = `
+    ${back('SUCCÈS')}
+    <div class="col" style="flex:1">
+      ${achs.map((a,i)=>`<div class="row ${i?'divtop':''}" style="gap:12px;padding:13px 2px;${a[2]?'':'opacity:.45'}"><div class="panel" style="width:40px;height:40px;flex:none;${a[2]?'border-color:var(--accent)':''}"></div><div class="grow"><div class="sm">${a[0]}</div><div class="lbl" style="margin-top:3px">${a[1]}</div></div><span class="mono ${a[2]?'acc':'mut'}">${a[2]?'✓':'🔒'}</span></div>`).join('')}
+    </div>`;
+
+  const setRows = [['SON','ON',1],['MUSIQUE','ON',1],['NOTIFICATIONS','OFF',0],['LANGUE','FR',2],['COMPTE','',2],['CONFIDENTIALITÉ','',2]];
+  screens.settings = `
+    ${back('RÉGLAGES')}
+    <div class="col" style="flex:1">
+      ${setRows.map((s,i)=>`<div class="between ${i?'divtop':''}" style="padding:16px 4px"><span class="sm">${s[0]}</span>${s[2]===2?`<span class="mono mut" style="font-size:12px">${s[1]?s[1]+' →':'→'}</span>`:`<span class="mono" style="font-size:9px;letter-spacing:1px;padding:5px 9px;border:1px solid ${s[2]?'var(--accent)':'var(--border)'};color:${s[2]?'var(--accent)':'var(--muted)'}">${s[1]}</span>`}</div>`).join('')}
+    </div>
+    <div class="center mut mono xs" style="margin:10px 0 16px">KWIZZ v0.1</div>`;
+
+  screens.duel = `
+    ${back('DUEL')}
+    <div class="col" style="flex:1;justify-content:center;gap:18px">
+      <div class="between">
+        <div class="center" style="flex:1"><div style="transform:scale(.7)">${mann}</div><div class="mono acc" style="font-size:13px">TOI</div><div class="lbl">LVL 7</div></div>
+        <div class="px" style="font-size:16px">VS</div>
+        <div class="center" style="flex:1"><div style="transform:scale(.7)">${mann}</div><div class="mono" style="font-size:13px">BOT</div><div class="lbl">LVL 7</div></div>
+      </div>
+      <div class="panel center" style="padding:14px"><div class="lbl">MISE</div><div class="mono acc" style="font-size:18px;margin-top:6px"><span class="c">15</span></div></div>
+      <div class="mut xs center">Mêmes questions pour les deux, le plus rapide marque.</div>
+    </div>
+    <button class="btn lg" data-go="game" style="margin:10px 0 16px">LANCER LE DUEL</button>`;
+
+  screens.defi = `
+    ${back('DÉFI DU JOUR')}
+    <div class="col center" style="flex:1;justify-content:center;gap:16px">
+      <div class="px acc" style="font-size:22px">★</div>
+      <div class="mono" style="font-size:16px">Défi du 2 juin</div>
+      <div class="mut sm center" style="max-width:230px">Une grille unique, la même pour tout le monde aujourd'hui. Une seule tentative.</div>
+      <div class="panel center" style="padding:16px;width:100%"><div class="lbl">RÉCOMPENSE</div><div class="mono acc" style="font-size:18px;margin-top:6px"><span class="c">+50</span> &nbsp; <span class="mut" style="font-size:13px">+ bonus série</span></div></div>
+    </div>
+    <button class="btn lg" data-go="game" style="margin:10px 0 16px">COMMENCER</button>`;
+
+  // ---- inject ----
+  const vp = document.getElementById('vp');
+  vp.innerHTML = Object.entries(screens).map(([id,html])=>`<section class="screen" id="s-${id}">${html}</section>`).join('');
+
+  // ---- router ----
+  const stack = [];
+  let cur = 'onboarding';
+  function show(id){ cur=id; document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id==='s-'+id)); const el=document.getElementById('s-'+id); if(el) el.scrollTop=0; }
+  function go(id){ if(id==='game'){ startGame(); } stack.push(cur); show(id); }
+  function goBack(){ const p=stack.pop(); if(p) show(p); }
+  function tab(id){ stack.length=0; show(id); }
+  show('onboarding');
+
+  document.addEventListener('click', (e)=>{
+    const pal=e.target.closest('[data-pal]'); if(pal){ document.body.className=pal.dataset.pal; return; }
+    const g=e.target.closest('[data-go]'); if(g){ go(g.dataset.go); return; }
+    const b=e.target.closest('[data-back]'); if(b){ goBack(); return; }
+    const t=e.target.closest('[data-tab]'); if(t){ tab(t.dataset.tab); return; }
+    const a=e.target.closest('[data-ans]'); if(a){ onAnswer(parseInt(a.dataset.ans,10)); return; }
+    const n=e.target.closest('[data-next]'); if(n){ nextQ(); return; }
+    const d=e.target.closest('.dsel'); if(d){ document.querySelectorAll('#s-difficulty .dsel').forEach(x=>x.style.borderColor='var(--border)'); d.style.borderColor='var(--accent)'; return; }
+  });
+
+  // ---- quiz ----
+  const QS = [
+    ['Quelle est la capitale de l\'Australie ?', ['Sydney','Canberra','Melbourne','Perth'], 1],
+    ['Combien de côtés a un hexagone ?', ['Cinq','Six','Sept','Huit'], 1],
+    ['Qui a peint la Joconde ?', ['Van Gogh','Picasso','Léonard de Vinci','Dali'], 2],
+    ['En quelle année débute la Révolution française ?', ['1715','1789','1804','1848'], 1],
+    ['Quel gaz l\'humain respire-t-il pour vivre ?', ['Azote','Hélium','Oxygène','Hydrogène'], 2],
+  ];
+  let qi=0, score=0, correct=0, timer=null, timeLeft=100, answered=false;
+
+  function startGame(){ qi=0; score=0; correct=0; renderQ(); }
+  function renderQ(){
+    answered=false; timeLeft=100;
+    const q=QS[qi];
+    const host=document.getElementById('s-game').querySelector('#gamehost');
+    host.innerHTML = `
+      <div class="between" style="margin-bottom:14px">
+        <div class="col"><span class="lbl">SCORE</span><span class="score" style="font-size:22px;margin-top:5px">${score}</span></div>
+        <div class="col" style="text-align:right"><span class="lbl">QUESTION</span><span class="mono" style="font-size:16px;margin-top:5px">${String(qi+1).padStart(2,'0')}/05</span></div>
+      </div>
+      <div class="between" style="margin-bottom:6px"><span class="lbl">VITESSE</span><span class="lbl">🔥 série ${correct}</span></div>
+      <div class="tbar" style="margin-bottom:18px"><i id="tfill"></i></div>
+      <div class="qbox"><div class="q">${q[0]}</div></div>
+      <div class="col" id="answers" style="gap:9px;margin-top:16px">
+        ${q[1].map((a,i)=>`<div class="ans" data-ans="${i}"><span class="k">${'ABCD'[i]}</span> ${a}</div>`).join('')}
+      </div>
+      <div id="gfoot" style="margin-top:auto;padding:14px 0 16px"></div>`;
+    startTimer();
+  }
+  function startTimer(){
+    clearInterval(timer);
+    const fill=()=>{ const f=document.getElementById('tfill'); if(f) f.style.width=timeLeft+'%'; };
+    fill();
+    timer=setInterval(()=>{ timeLeft-=1.1; if(timeLeft<=0){ timeLeft=0; fill(); clearInterval(timer); reveal(-1); } else fill(); }, 100);
+  }
+  function onAnswer(i){ if(answered) return; clearInterval(timer); reveal(i); }
+  function reveal(sel){
+    answered=true;
+    const q=QS[qi];
+    const bonus=Math.round(timeLeft);
+    const good = sel===q[2];
+    if(good){ score += 100 + bonus; correct++; }
+    document.querySelectorAll('#s-game .ans').forEach((el,i)=>{
+      el.style.pointerEvents='none';
+      if(i===q[2]) el.classList.add('ok');
+      else if(i===sel) el.classList.add('bad');
+      else el.classList.add('dim');
+    });
+    const foot=document.getElementById('gfoot');
+    foot.innerHTML = `<div class="between" style="margin-bottom:10px"><span class="mono ${good?'acc':'mut'}" style="font-size:13px">${good?('+'+(100+bonus)+' pts'):'+0'}</span><span class="lbl">${good?('bonus vitesse +'+bonus):'raté'}</span></div><button class="btn lg" data-next>${qi<QS.length-1?'QUESTION SUIVANTE':'VOIR LE SCORE'}</button>`;
+    const sc=document.querySelector('#s-game .score'); if(sc) sc.textContent=score;
+  }
+  function nextQ(){ qi++; if(qi<QS.length){ renderQ(); } else { finish(); } }
+  function finish(){
+    clearInterval(timer);
+    document.getElementById('s-results').querySelector('#res-score').textContent=score;
+    document.getElementById('s-results').querySelector('#res-correct').textContent=correct+'/'+QS.length;
+    document.getElementById('s-results').querySelector('#res-coins').textContent='+'+(correct*1);
+    document.getElementById('s-results').querySelector('#res-xp').textContent='+'+(correct*10);
+    stack.push('game'); show('results');
+  }
+</script>
+</body>
+</html>
