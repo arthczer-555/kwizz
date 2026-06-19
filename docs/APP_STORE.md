@@ -83,13 +83,14 @@ culture,trivia,questions,savoir,connaissance,classement,arcade,solo,multijoueur,
 
 ## URLs (obligatoires)
 
-- **URL de support** : `https://arthczer-555.github.io/kwizz/support.html`
-- **URL de confidentialité** : `https://arthczer-555.github.io/kwizz/confidentialite.html`
-- **URL marketing** (optionnelle) : `https://arthczer-555.github.io/kwizz/`
+- **URL de support** : `https://arthczer-555.github.io/kwizz-legal/support.html`
+- **URL de confidentialité** : `https://arthczer-555.github.io/kwizz-legal/confidentialite.html`
+- **URL marketing** (optionnelle) : `https://arthczer-555.github.io/kwizz-legal/`
 
-> Repo unique : `arthczer-555/kwizz` (public). Les pages légales sont servies par
-> GitHub Pages depuis la branche `gh-pages` (source : `web/`). Pour les modifier,
-> éditer `web/*.html`, puis re-publier la branche gh-pages.
+> Code source : `arthczer-555/kwizz` (privé). Pages légales servies par le repo public
+> `arthczer-555/kwizz-legal` via GitHub Pages (déjà en ligne). Les sources des pages
+> existent aussi dans `web/` ici ; si tu les modifies, pense à pousser la même version
+> dans kwizz-legal pour mettre à jour le site.
 > Email de contact en place : `thequikstudio@gmail.com`.
 
 ---
