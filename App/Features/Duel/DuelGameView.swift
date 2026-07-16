@@ -29,6 +29,8 @@ struct DuelGameView: View {
             }
             .screenPadding()
             .padding(.vertical, 12)
+            .frame(maxWidth: 680)
+            .frame(maxWidth: .infinity)
         }
         .screenBackground()
     }
@@ -50,6 +52,7 @@ struct DuelGameView: View {
             .font(KFont.body(19, weight: .semibold))
             .multilineTextAlignment(.center)
             .foregroundStyle(Theme.text)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 20).padding(.horizontal, 16)
             .overlay(Rectangle().stroke(Theme.border, lineWidth: 1))

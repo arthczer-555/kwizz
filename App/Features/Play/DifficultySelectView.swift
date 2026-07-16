@@ -10,7 +10,17 @@ struct DifficultySelectView: View {
     @Environment(Router.self) private var router
     @Environment(\.accent) private var accent
 
-    @State private var difficulty: Difficulty = .normal
+    /// nil = « Toutes », proposé en entraînement seulement : les questions sont
+    /// tirées dans toutes les difficultés et chacune paie selon la sienne.
+    @State private var difficulty: Difficulty? = .normal
+
+    /// Les trois difficultés, plus « Toutes » (nil) en entraînement.
+    private var options: [Difficulty?] {
+        Difficulty.allCases.map { $0 } + (mode.isTraining ? [nil] : [])
+    }
+
+    private func title(_ d: Difficulty?) -> String { d?.title ?? "Toutes" }
+    private func gainLabel(_ d: Difficulty?) -> String { d?.gainLabel ?? "x1 à x2.5" }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -21,16 +31,16 @@ struct DifficultySelectView: View {
                 .foregroundStyle(Theme.muted)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            ForEach(Difficulty.allCases) { d in
+            ForEach(options, id: \.self) { d in
                 Button {
                     difficulty = d
                 } label: {
                     HStack {
-                        Text(d.title)
+                        Text(title(d))
                             .font(KFont.mono(14))
                             .foregroundStyle(d == difficulty ? accent : Theme.text)
                         Spacer()
-                        SectionLabel("gain \(d.gainLabel)")
+                        SectionLabel("gain \(gainLabel(d))")
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity)

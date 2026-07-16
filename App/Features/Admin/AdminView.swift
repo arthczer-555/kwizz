@@ -28,7 +28,7 @@ struct AdminView: View {
                     summary
 
                     section("Niveau") {
-                        Text("Niveau actuel : \(store.profile.level) · \(store.profile.title)")
+                        Text("Niveau actuel : \(store.profile.level)")
                             .font(KFont.body(12))
                             .foregroundStyle(Theme.muted)
                         LazyVGrid(columns: levelColumns, spacing: 8) {

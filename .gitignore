@@ -13,3 +13,10 @@ xcuserdata/
 
 # Sauvegardes
 *.bak
+
+# Fichiers de travail du CLI Supabase
+supabase/.temp/
+
+# Captures brutes du simulateur : les captures publiées sont rangées dans
+# screenshots/6.5/ et screenshots/6.9/ sous un nom stable.
+screenshots/Simulator Screenshot*

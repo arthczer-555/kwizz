@@ -150,6 +150,7 @@ struct RouteView: View {
         case .settings: SettingsView()
         case .admin: AdminView()
         case .duelEntry: DuelEntryView()
+        case .rankedLeaderboard: RankedLeaderboardView()
         }
     }
 }

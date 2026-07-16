@@ -60,9 +60,18 @@ final class PlayerStore {
     // MARK: Onboarding
 
     func completeOnboarding(pseudo: String) {
-        let name = pseudo.trimmingCharacters(in: .whitespacesAndNewlines)
-        profile.pseudo = name.isEmpty ? "RetroKid" : name
+        setPseudo(pseudo)
         hasOnboarded = true
+        save()
+    }
+
+    /// Adopte en local le pseudo réservé côté serveur. Passer par
+    /// `SupabaseService.claimPseudo` d'abord (cf. `PseudoClaim`) : les pseudos
+    /// sont uniques, écrire ici sans réservation désynchronise du classement.
+    func setPseudo(_ pseudo: String) {
+        let name = pseudo.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        profile.pseudo = String(name.prefix(24))
         save()
     }
 
@@ -73,7 +82,8 @@ final class PlayerStore {
     private var recentlyServed: [String] = []
     private let recentlyServedCap = 200
 
-    func makeSession(mode: GameMode, category: Category?, subcategory: Subcategory?, difficulty: Difficulty) -> QuizSession {
+    /// `difficulty` is nil when the player picked "toutes les difficultés" (Entraînement).
+    func makeSession(mode: GameMode, category: Category?, subcategory: Subcategory?, difficulty: Difficulty?) -> QuizSession {
         let catID = category?.id
         let questions: [Question]
         let resolvedCat: String?
@@ -83,8 +93,10 @@ final class PlayerStore {
             questions = DailyChallenge.questions(from: bank.all, day: today())
             resolvedCat = Category.melange.id
         case .entrainement:
-            // Seul mode personnalisable : on filtre par thème, sous-thème et difficulté choisis.
-            questions = bank.query(categoryID: catID, subcategoryID: subcategory?.id, difficulty: difficulty, count: 80, excluding: recent)
+            // Seul mode personnalisable : on filtre par thème, sous-thème et difficulté
+            // choisis. difficulty nil = « toutes les difficultés », le banc ne filtre pas.
+            questions = bank.query(categoryID: catID, subcategoryID: subcategory?.id, difficulty: difficulty,
+                                   count: mode.questionCount ?? 80, excluding: recent)
             resolvedCat = catID
         case .classique, .survie, .contreLaMontre, .duel:
             // Tout mélangé : toutes les catégories et toutes les difficultés confondues.

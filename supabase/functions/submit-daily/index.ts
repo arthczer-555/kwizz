@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => null);
     const dayIndex = Number(body?.dayIndex);
     const answers = Array.isArray(body?.answers) ? body.answers : [];
+    // La borne haute suit DailyChallenge.questionCount côté app (10).
     if (!Number.isInteger(dayIndex) || answers.length === 0 || answers.length > 10) {
       return json({ error: "bad_request" }, 400);
     }

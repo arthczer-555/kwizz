@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(PlayerStore.self) private var store
     @Environment(\.accent) private var accent
+    @State private var editingPseudo = false
 
     private let columns = [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)]
 
@@ -23,8 +24,16 @@ struct ProfileView: View {
                         AvatarLayeredView(look: store.avatarLook, scale: 1.0)
                     }
                     .buttonStyle(.plain)
-                    Text(store.profile.pseudo).font(KFont.mono(16, bold: true))
-                    Text("NIV.\(store.profile.level) · \(store.profile.title)")
+                    Button { editingPseudo = true } label: {
+                        HStack(spacing: 5) {
+                            Text(store.profile.pseudo).font(KFont.mono(16, bold: true))
+                            Image(systemName: "pencil")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Theme.muted)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    Text("Niveau \(store.profile.level)")
                         .font(KFont.body(13))
                         .foregroundStyle(Theme.muted)
                     XPBar(fraction: store.profile.levelProgress.fraction)
@@ -71,6 +80,11 @@ struct ProfileView: View {
             .screenPadding()
         }
         .screenBackground()
+        .sheet(isPresented: $editingPseudo) {
+            PseudoEditSheet(current: store.profile.pseudo)
+                .environment(store)
+                .environment(\.accent, accent)
+        }
     }
 
     @ViewBuilder

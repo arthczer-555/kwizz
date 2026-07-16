@@ -153,11 +153,11 @@ public struct PlayerProfile: Codable, Sendable {
         GameMode.allCases.filter(\.tracksRecord).reduce(0) { $0 + bestScore(forMode: $1) }
     }
 
-    public static func recordKey(mode: GameMode, categoryID: String?, difficulty: Difficulty) -> String {
-        "\(mode.rawValue)|\(categoryID ?? "all")|\(difficulty.rawValue)"
+    public static func recordKey(mode: GameMode, categoryID: String?, difficulty: Difficulty?) -> String {
+        "\(mode.rawValue)|\(categoryID ?? "all")|\(difficulty?.rawValue ?? "toutes")"
     }
 
-    public func bestScore(mode: GameMode, categoryID: String?, difficulty: Difficulty) -> Int {
+    public func bestScore(mode: GameMode, categoryID: String?, difficulty: Difficulty?) -> Int {
         bestScores[Self.recordKey(mode: mode, categoryID: categoryID, difficulty: difficulty)] ?? 0
     }
 

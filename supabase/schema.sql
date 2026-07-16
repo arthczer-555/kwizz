@@ -230,12 +230,12 @@ create table if not exists profiles (
   constraint correct_le_answered check (total_correct <= total_answered)
 );
 
--- Index NON unique : les pseudos ne sont pas réservés (l'app autorise les
--- doublons, le pseudo par défaut est "RetroKid" pour tout le monde). Un index
--- UNIQUE ici faisait échouer la création de comptes anonymes dès le 2e joueur
--- (collision sur "RetroKid" via le trigger handle_new_user -> 500 à l'auth).
+-- Les pseudos sont réservés : un seul joueur par pseudo (à la casse près).
+-- L'unicité n'est tenable que parce que le pseudo par défaut est libre et non
+-- constant (cf. unique_pseudo plus bas) : avec "RetroKid" en dur pour tout le
+-- monde, la création du 2e compte anonyme échouait (collision -> 500 à l'auth).
 drop index if exists idx_profiles_pseudo_lower;
-create index if not exists idx_profiles_pseudo_lower on profiles(lower(pseudo));
+create unique index if not exists idx_profiles_pseudo_lower on profiles(lower(pseudo));
 
 drop trigger if exists trg_profiles_updated_at on profiles;
 create trigger trg_profiles_updated_at
@@ -390,14 +390,88 @@ grant select on leaderboard to anon, authenticated;
 grant select on app_questions to anon, authenticated;
 
 -- =============================================================================
--- 7. Auto-création du profil à l'inscription (Auth -> profiles)
+-- 7. Pseudos : unicité, réservation, auto-création du profil
 -- =============================================================================
+
+-- Premier pseudo libre à partir d'une base ("RetroKid" -> "RetroKid2"...). C'est
+-- ce qui rend l'index UNIQUE viable : un nouveau compte ne peut pas naître sur un
+-- pseudo déjà pris. Le résultat respecte toujours le CHECK (2..24 caractères).
+create or replace function public.unique_pseudo(base text)
+returns text as $$
+declare
+  clean     text;
+  candidate text;
+  suffix    text;
+  n         int := 1;
+begin
+  clean := btrim(coalesce(base, ''));
+  if length(clean) < 2 then clean := 'RetroKid'; end if;
+  clean := left(clean, 24);
+  candidate := clean;
+
+  while exists (select 1 from public.profiles where lower(pseudo) = lower(candidate)) loop
+    n := n + 1;
+    suffix := n::text;
+    -- On tronque la base pour que base+suffixe tienne dans les 24 caractères.
+    candidate := left(clean, 24 - length(suffix)) || suffix;
+  end loop;
+
+  return candidate;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+-- Réservation d'un pseudo par le joueur courant : 'ok' | 'taken' | 'invalid'.
+-- security definer car RLS n'autorise la lecture que de SON profil : l'app ne
+-- peut pas tester l'unicité elle-même.
+create or replace function public.claim_pseudo(p_pseudo text)
+returns text as $$
+declare
+  uid   uuid := auth.uid();
+  clean text;
+begin
+  if uid is null then return 'invalid'; end if;
+
+  clean := btrim(coalesce(p_pseudo, ''));
+  if length(clean) < 2 or length(clean) > 24 then return 'invalid'; end if;
+
+  if exists (
+    select 1 from public.profiles where lower(pseudo) = lower(clean) and id <> uid
+  ) then
+    return 'taken';
+  end if;
+
+  insert into public.profiles (id, pseudo) values (uid, clean)
+  on conflict (id) do update set pseudo = excluded.pseudo;
+
+  return 'ok';
+exception
+  -- Course entre deux joueurs sur le même pseudo : le perdant reçoit 'taken'.
+  when unique_violation then
+    return 'taken';
+end;
+$$ language plpgsql security definer set search_path = public;
+
+grant execute on function public.claim_pseudo(text) to anon, authenticated;
+
+-- Test de disponibilité (feedback pendant la frappe). Son propre pseudo est
+-- disponible : re-valider sans changer ne doit pas afficher "déjà pris".
+create or replace function public.pseudo_available(p_pseudo text)
+returns boolean as $$
+  select not exists (
+    select 1 from public.profiles
+    where lower(pseudo) = lower(btrim(p_pseudo))
+      and id is distinct from auth.uid()
+  );
+$$ language sql stable security definer set search_path = public;
+
+grant execute on function public.pseudo_available(text) to anon, authenticated;
+
 create or replace function handle_new_user() returns trigger as $$
 begin
   insert into public.profiles (id, pseudo)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'pseudo', 'RetroKid')
+    public.unique_pseudo(coalesce(new.raw_user_meta_data->>'pseudo', 'RetroKid'))
   )
   on conflict (id) do nothing;
   return new;

@@ -87,14 +87,28 @@ final class SupabaseService {
     }
 
     /// Une session au jeton exploitable : réutilise la session courante (que
-    /// `auth.session` rafraîchit au besoin), et bascule sur une NOUVELLE session
-    /// anonyme si aucune session valide n'existe (première ouverture, ou session
-    /// persistée morte dont le refresh token ne marche plus).
+    /// `auth.session` rafraîchit au besoin). On ne crée une NOUVELLE session
+    /// anonyme QUE s'il n'existe aucune session stockée (vraie première ouverture).
+    ///
+    /// Garde-fou anti-doublon d'identité : si `auth.session` échoue alors qu'une
+    /// session est BIEN stockée (Keychain), c'est presque toujours un raté
+    /// TRANSITOIRE du refresh (réseau pas prêt au lancement à froid le lendemain ;
+    /// le SDK garde la session sur disque, cf. SessionManager.refreshSession qui
+    /// ne supprime rien en cas d'échec). Forger une nouvelle session anonyme dans
+    /// ce cas abandonnait le compte du joueur : le score de la veille restait
+    /// orphelin sur l'ancien user_id et un 2e profil (pseudo « RetroKid » par
+    /// défaut) apparaissait dans le classement mensuel. On PROPAGE donc l'erreur
+    /// (l'app retentera au prochain `start()`, avec la MÊME identité) au lieu de
+    /// repartir de zéro.
     private func validSession(for client: SupabaseClient) async throws -> Session {
-        if let session = try? await client.auth.session {
-            return session
+        do {
+            return try await client.auth.session
+        } catch {
+            // currentSession lit la session persistée sans la rafraîchir : non-nil
+            // => une identité existe déjà, l'échec est transitoire -> on retentera.
+            if client.auth.currentSession != nil { throw error }
+            return try await client.auth.signInAnonymously()
         }
-        return try await client.auth.signInAnonymously()
     }
     #endif
 
@@ -107,10 +121,50 @@ final class SupabaseService {
         do {
             try await client.from("profiles").upsert(ProfileRow(id: id, profile: profile)).execute()
         } catch {
+            // Le pseudo est UNIQUE en base : si le joueur a gardé en local un pseudo
+            // entre-temps pris par quelqu'un d'autre, l'upsert entier échoue et ses
+            // stats ne remonteraient JAMAIS. On rejoue donc l'écriture sans le
+            // pseudo (le serveur fait foi pour ce champ ; c'est claim_pseudo qui le
+            // change, avec un vrai message d'erreur côté UI).
+            try? await client.from("profiles")
+                .update(ProfileStatsRow(profile: profile))
+                .eq("id", value: id)
+                .execute()
             // Non-fatal: a failed write must NOT flip the app to "offline" (status
             // reflects the auth session, not the last operation). The leaderboard
             // and ranked screens gate their UI on `status`, so keep it as-is.
         }
+        #endif
+    }
+
+    /// Résultat d'une tentative de réservation de pseudo (RPC `claim_pseudo`).
+    enum ClaimPseudoResult: String, Sendable {
+        /// Réservé : le pseudo est désormais celui du joueur.
+        case ok
+        /// Déjà porté par un autre joueur.
+        case taken
+        /// Vide, trop court ou trop long (2..24 caractères).
+        case invalid
+        /// Hors ligne / échec réseau : impossible de trancher maintenant.
+        case unavailable
+    }
+
+    /// Réserve `pseudo` pour le joueur courant. L'unicité ne peut pas être testée
+    /// côté client (RLS ne laisse lire que son propre profil), d'où la RPC.
+    func claimPseudo(_ pseudo: String) async -> ClaimPseudoResult {
+        #if canImport(Supabase)
+        guard case .online = status, let client else { return .unavailable }
+        struct Params: Encodable { let p_pseudo: String }
+        do {
+            let raw: String = try await client
+                .rpc("claim_pseudo", params: Params(p_pseudo: pseudo))
+                .execute().value
+            return ClaimPseudoResult(rawValue: raw) ?? .unavailable
+        } catch {
+            return .unavailable
+        }
+        #else
+        return .unavailable
         #endif
     }
 
@@ -355,9 +409,12 @@ final class SupabaseService {
                 lastReason = Self.describe(error)
                 print("[Ranked] enqueue-ranked a échoué (essai \(attempt + 1)) : \(lastReason)")
                 if attempt == 0, Self.isUnauthorized(error) {
-                    // Session neuve + on resynchronise userID (sert au mapping de rôle
-                    // me/adversaire côté RankedController).
-                    if let session = try? await client.auth.signInAnonymously() {
+                    // On RAFRAÎCHIT la session existante (et surtout PAS de
+                    // signInAnonymously : créer un compte anonyme neuf juste pour
+                    // purger un jeton périmé forkait l'identité du joueur, cf.
+                    // validSession). On resynchronise userID (sert au mapping de
+                    // rôle me/adversaire côté RankedController).
+                    if let session = try? await client.auth.session {
                         userID = session.user.id.uuidString.lowercased()
                     }
                     continue
@@ -471,6 +528,34 @@ final class SupabaseService {
         return []
         #endif
     }
+
+    /// Ma place au classement général et le nombre total de joueurs classés.
+    /// `nil` tant que je n'ai pas de ligne `ranked_stats` (aucun match joué).
+    /// Nécessaire car le joueur peut être hors du top 100 : sa place ne se déduit
+    /// pas de la liste rapportée par `rankedLeaderboard`.
+    struct MyRankedRank: Sendable {
+        let rank: Int
+        let total: Int
+    }
+
+    func myRankedRank() async -> MyRankedRank? {
+        #if canImport(Supabase)
+        guard case .online = status, let client, let id = userID else { return nil }
+        struct RankRow: Decodable { let rank: Int }
+        do {
+            let mine: [RankRow] = try await client.from("ranked_leaderboard")
+                .select("rank").eq("user_id", value: id).limit(1).execute().value
+            guard let rank = mine.first?.rank else { return nil }
+
+            // head: true => on ne rapatrie aucune ligne, juste le total.
+            let total = try await client.from("ranked_leaderboard")
+                .select("user_id", head: true, count: .exact).execute().count
+            return MyRankedRank(rank: rank, total: total ?? 0)
+        } catch { return nil }
+        #else
+        return nil
+        #endif
+    }
 }
 
 #if canImport(Supabase)
@@ -504,6 +589,29 @@ private struct ProfileRow: Encodable {
         let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard t.count >= 2 else { return "RetroKid" }
         return String(t.prefix(24))
+    }
+}
+
+/// Les mêmes colonnes que `ProfileRow`, sans `pseudo` : sert de repli quand
+/// l'upsert complet bute sur l'unicité du pseudo, pour que les stats du joueur
+/// remontent quand même (cf. `syncProfile`).
+private struct ProfileStatsRow: Encodable {
+    let total_xp: Int
+    let coins: Int
+    let games_played: Int
+    let total_correct: Int
+    let total_answered: Int
+    let best_streak_ever: Int
+    let daily_streak: Int
+
+    init(profile: PlayerProfile) {
+        self.total_xp = max(0, profile.totalXP)
+        self.coins = max(0, profile.coins)
+        self.games_played = max(0, profile.gamesPlayed)
+        self.total_answered = max(0, profile.totalAnswered)
+        self.total_correct = min(max(0, profile.totalCorrect), max(0, profile.totalAnswered))
+        self.best_streak_ever = max(0, profile.bestStreakEver)
+        self.daily_streak = max(0, profile.dailyStreak)
     }
 }
 #endif

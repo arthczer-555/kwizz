@@ -80,6 +80,10 @@ struct PixelButton: View {
     var fullWidth: Bool = true
     let action: () -> Void
     @Environment(\.accent) private var accent
+    /// `.disabled(...)` bloque le tap sans rien changer à l'apparence : sans ce
+    /// grisé, un bouton inactif reste pleinement coloré et le joueur tape dessus
+    /// en boucle sans comprendre pourquoi rien ne se passe.
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         Button(action: action) {
@@ -95,6 +99,7 @@ struct PixelButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .opacity(isEnabled ? 1 : 0.35)
     }
 }
 

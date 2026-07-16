@@ -14,7 +14,10 @@ public struct AnswerOutcome: Sendable, Equatable {
 /// All real-time timing lives in the app layer, which keeps this testable.
 public struct QuizSession: Sendable {
     public let mode: GameMode
-    public let difficulty: Difficulty
+    /// The difficulty the player picked, or nil when they chose "toutes les
+    /// difficultés" (Entraînement only): the round then mixes every difficulty and
+    /// each question pays according to its own.
+    public let difficulty: Difficulty?
     public let categoryID: String?
     public let questions: [Question]
 
@@ -35,7 +38,7 @@ public struct QuizSession: Sendable {
     /// derive an effective (averaged) multiplier for the round's coin reward.
     private var coinMultiplierSum = 0.0
 
-    public init(mode: GameMode, difficulty: Difficulty, categoryID: String?, questions: [Question]) {
+    public init(mode: GameMode, difficulty: Difficulty?, categoryID: String?, questions: [Question]) {
         self.mode = mode
         self.difficulty = difficulty
         self.categoryID = categoryID
@@ -95,7 +98,7 @@ public struct QuizSession: Sendable {
         // multipliers, so mixed-difficulty rounds pay out fairly.
         let effectiveMultiplier = correctCount > 0
             ? coinMultiplierSum / Double(correctCount)
-            : difficulty.coinMultiplier
+            : (difficulty?.coinMultiplier ?? Difficulty.normal.coinMultiplier)
         let input = Economy.Input(
             mode: mode, coinMultiplier: effectiveMultiplier, correctCount: correctCount,
             total: displayTotal, perfect: perfect && correctCount > 0, bestStreak: bestStreak,

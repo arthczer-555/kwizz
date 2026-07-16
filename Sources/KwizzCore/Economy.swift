@@ -6,6 +6,10 @@ public enum Economy {
     public static let trainingDailyCap = 20
     public static let duelStake = 15
 
+    /// Classique pays 20% above the raw base: it is the flagship solo mode, with no
+    /// daily cap of its own, so the difficulty multiplier alone undersold it.
+    public static let classiqueBonus = 1.2
+
     /// Coin floor a brand-new player is topped up to after their first game, so
     /// the cheapest cosmetic (200) is buyable in session 1. See `welcomeTopUp`.
     public static let welcomeFloor = 200
@@ -78,8 +82,13 @@ public enum Economy {
     public static func coins(_ i: Input) -> Int {
         switch i.mode {
         case .entrainement:
-            return i.correctCount / 10   // training: very reduced, capped at 20/day by the store
-        case .classique, .contreLaMontre:
+            // Training: very reduced, and capped at 20/day by the store, which is
+            // what really bounds the income. The divisor only sets the grain, so it
+            // stays coarse enough to feel like a reward on a 15-question round.
+            return i.correctCount / 3
+        case .classique:
+            return scaled(i.correctCount, i.coinMultiplier * classiqueBonus)
+        case .contreLaMontre:
             return scaled(i.correctCount, i.coinMultiplier)
         case .survie:
             return scaled(i.correctCount + i.bestStreak / 5, i.coinMultiplier)

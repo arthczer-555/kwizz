@@ -1,3 +1,8 @@
+-- OBSOLÈTE - NE PLUS EXÉCUTER. Remplacé par pseudo_unique.sql, qui rétablit
+-- l'unicité des pseudos en supprimant la vraie cause (un pseudo par défaut
+-- constant) au lieu de retirer l'index. Rejouer ce fichier ré-autoriserait les
+-- doublons. Conservé pour l'historique du bug décrit ci-dessous.
+--
 -- Fix : la création de comptes anonymes échouait (500 "Database error creating
 -- anonymous user") => l'app restait "Hors ligne".
 --

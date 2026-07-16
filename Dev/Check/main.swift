@@ -26,12 +26,11 @@ func q(_ id: String, cat: String = "histoire", diff: Difficulty = .normal, corre
 }
 
 // MARK: Level table
-eq(LevelTable.titles.count, 20, "titles count")
 eq(LevelTable.xpToNext.count, 19, "xpToNext count")
 eq(LevelTable.cumulative.count, 20, "cumulative count")
 eq(LevelTable.totalToMax, 238_850, "totalToMax")
-eq(LevelTable.titles.first, "L'américain moyen", "first title")
-eq(LevelTable.titles.last, "Émilien", "last title")
+eq(LevelTable.title(level: 1), "Niveau 1", "first title")
+eq(LevelTable.title(level: 20), "Niveau 20", "last title")
 check((1..<LevelTable.cumulative.count).allSatisfy { LevelTable.cumulative[$0] > LevelTable.cumulative[$0 - 1] }, "cumulative strictly increasing")
 eq(LevelTable.level(totalXP: 0), 1, "level @0")
 eq(LevelTable.level(totalXP: 149), 1, "level @149")

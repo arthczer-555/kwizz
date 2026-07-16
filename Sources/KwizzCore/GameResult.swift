@@ -4,7 +4,8 @@ import Foundation
 public struct GameResult: Identifiable, Sendable {
     public let id: UUID
     public let mode: GameMode
-    public let difficulty: Difficulty
+    /// nil when the player picked "toutes les difficultés" (Entraînement only).
+    public let difficulty: Difficulty?
     public let categoryID: String?
     public let score: Int
     public let maxScore: Int
@@ -16,7 +17,7 @@ public struct GameResult: Identifiable, Sendable {
     public let isNewRecord: Bool
     public let duelWon: Bool?
 
-    public init(mode: GameMode, difficulty: Difficulty, categoryID: String?, score: Int,
+    public init(mode: GameMode, difficulty: Difficulty?, categoryID: String?, score: Int,
                 maxScore: Int, correctCount: Int, total: Int, bestStreak: Int,
                 coinsEarned: Int, xpEarned: Int, isNewRecord: Bool, duelWon: Bool?) {
         self.id = UUID()

@@ -69,7 +69,8 @@ private enum Pal {
     static let cloth2 = Color(hex: "#242424")
     static let cloth3 = Color(hex: "#141414")
     static let hair = Color(hex: "#2f2f2f")
-    static let hat = Color(hex: "#272727")
+    static let hat = Color(hex: "#c2c7cd")
+    static let hatShade = Color(hex: "#8d949c")
     static let gold = Color(hex: "#ffb000")
     static let green = Color(hex: "#00ff88")
     static let epic = Color(hex: "#c084fc")
@@ -334,12 +335,23 @@ struct AvatarLayeredView: View {
             .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         case "haut.hawaii":
             ZStack {
-                shape.fill(Color(hex: "#1aa3a3")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
+                shape.fill(Color(hex: "#0f9b8e")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
+                // floral print: leaf + hibiscus
                 ForEach(0..<6) { i in
-                    Circle().fill(Color(hex: "#ff7a59")).frame(width: 7, height: 7)
-                        .position(x: 62 + CGFloat(i % 3) * 18, y: 90 + CGFloat(i / 3) * 24)
+                    let fx = AV.cx - 18 + CGFloat(i % 3) * 18
+                    let fy = 100 + CGFloat(i / 3) * 26
+                    Ellipse().fill(Color(hex: "#0c7d6f")).frame(width: 12, height: 6)
+                        .rotationEffect(.degrees(-30)).position(x: fx + 6, y: fy + 4)
+                    Circle().fill(Color(hex: "#ff9f43")).frame(width: 9, height: 9).position(x: fx, y: fy)
+                    Circle().fill(Color(hex: "#ffd23f")).frame(width: 3.5, height: 3.5).position(x: fx, y: fy)
                 }
-                Rectangle().fill(Theme.text.opacity(0.4)).frame(width: 2, height: 60).position(x: AV.cx, y: 110)
+                // button placket
+                ForEach(0..<4) { i in
+                    Circle().fill(Color.white.opacity(0.85)).frame(width: 3, height: 3)
+                        .position(x: AV.cx, y: 92 + CGFloat(i) * 13)
+                }
+                // open camp collar
+                CampCollarShape().fill(Color(hex: "#0c7d6f")).frame(width: 38, height: 14).position(x: AV.cx, y: 82)
             }
             .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         case "haut.pull":
@@ -356,48 +368,99 @@ struct AvatarLayeredView: View {
             }
         case "haut.costume":
             ZStack {
-                shape.fill(Pal.cloth3).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
-                Rectangle().fill(Theme.text).frame(width: 13, height: 2).rotationEffect(.degrees(30)).position(x: 72, y: 81)
-                Rectangle().fill(Theme.text).frame(width: 13, height: 2).rotationEffect(.degrees(-30)).position(x: 88, y: 81)
-                TieShape().fill(accent).frame(width: 9, height: 26).position(x: AV.cx, y: 96)
+                shape.fill(Color(hex: "#232a36")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
+                // white shirt in the V opening
+                VNeckShape().fill(Color(hex: "#f2f3f5")).frame(width: 22, height: 30).position(x: AV.cx, y: 92)
+                // jacket lapels
+                LapelShape().fill(Color(hex: "#2c3543")).frame(width: 42, height: 34).position(x: AV.cx, y: 92)
+                LapelShape().stroke(Color.black.opacity(0.3), lineWidth: 1).frame(width: 42, height: 34).position(x: AV.cx, y: 92)
+                // tie
+                TieShape().fill(accent).frame(width: 9, height: 28).position(x: AV.cx, y: 104)
+                // buttons
+                Circle().fill(Color.black.opacity(0.4)).frame(width: 3, height: 3).position(x: AV.cx, y: 128)
+                Circle().fill(Color.black.opacity(0.4)).frame(width: 3, height: 3).position(x: AV.cx, y: 138)
             }
+            .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         case "haut.bomber":
             ZStack {
                 shape.fill(Color(hex: "#3a2f4a")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
-                Rectangle().fill(accent).frame(width: 62, height: 6).position(x: AV.cx, y: 78)
-                Rectangle().fill(accent).frame(width: 56, height: 5).position(x: AV.cx, y: 142)
-                Rectangle().fill(Theme.faint).frame(width: 2, height: 56).position(x: AV.cx, y: 112)
+                // ribbed collar
+                Rectangle().fill(accent).frame(width: 62, height: 8).position(x: AV.cx, y: 78)
+                ForEach(0..<10) { i in
+                    Rectangle().fill(Color.black.opacity(0.15)).frame(width: 1, height: 8).position(x: 52 + CGFloat(i) * 6, y: 78)
+                }
+                // ribbed hem
+                Rectangle().fill(accent).frame(width: 62, height: 7).position(x: AV.cx, y: 141)
+                ForEach(0..<10) { i in
+                    Rectangle().fill(Color.black.opacity(0.15)).frame(width: 1, height: 7).position(x: 52 + CGFloat(i) * 6, y: 141)
+                }
+                // zipper + pull
+                Rectangle().fill(Color(hex: "#c8ccd0")).frame(width: 2, height: 58).position(x: AV.cx, y: 111)
+                RoundedRectangle(cornerRadius: 1).fill(Color(hex: "#e8ecf0")).frame(width: 4, height: 6).position(x: AV.cx, y: 90)
+                // chest patch
+                RoundedRectangle(cornerRadius: 2).fill(accent.opacity(0.9)).frame(width: 11, height: 7).position(x: 63, y: 100)
             }
             .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         case "haut.smoking":
             ZStack {
-                shape.fill(Pal.cloth3).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
-                ForEach(0..<10) { i in
-                    Circle().fill(Color.white.opacity(0.8)).frame(width: 2.5, height: 2.5)
-                        .position(x: 58 + CGFloat((i * 7) % 44), y: 84 + CGFloat((i * 13) % 56))
+                shape.fill(Color(hex: "#0e0e13")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
+                // white shirt front
+                VNeckShape().fill(Color.white).frame(width: 20, height: 34).position(x: AV.cx, y: 94)
+                // satin lapels
+                LapelShape().fill(LinearGradient(colors: [Color(hex: "#2b2b34"), Color(hex: "#111116")],
+                                                 startPoint: .top, endPoint: .bottom))
+                    .frame(width: 44, height: 36).position(x: AV.cx, y: 94)
+                // shirt studs
+                ForEach(0..<3) { i in
+                    Circle().fill(Color(hex: "#151515")).frame(width: 2.5, height: 2.5).position(x: AV.cx, y: 100 + CGFloat(i) * 8)
                 }
-                Rectangle().fill(Theme.text).frame(width: 13, height: 2).rotationEffect(.degrees(30)).position(x: 72, y: 81)
-                Rectangle().fill(Theme.text).frame(width: 13, height: 2).rotationEffect(.degrees(-30)).position(x: 88, y: 81)
-                TieShape().fill(accent).frame(width: 12, height: 8).position(x: AV.cx, y: 86)
+                // white wing collar behind the bow tie (so it reads on the black jacket)
+                RoundedRectangle(cornerRadius: 2).fill(Color.white).frame(width: 24, height: 8).position(x: AV.cx, y: 83)
+                // black bow tie
+                BowTieShape().fill(Color(hex: "#141414")).frame(width: 20, height: 11).position(x: AV.cx, y: 83)
+                RoundedRectangle(cornerRadius: 1).fill(Color(hex: "#2c2c2c")).frame(width: 4, height: 6).position(x: AV.cx, y: 83)
             }
             .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         case "haut.armure":
             ZStack {
-                shape.fill(LinearGradient(colors: [Color(hex: "#b8c0c8"), Color(hex: "#7c858f")],
+                shape.fill(LinearGradient(colors: [Color(hex: "#c4ccd4"), Color(hex: "#828b95")],
                                           startPoint: .top, endPoint: .bottom))
                     .frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
-                Rectangle().fill(Color.white.opacity(0.5)).frame(width: 2, height: 56).position(x: AV.cx, y: 112)
-                StarMark().fill(Pal.gold).frame(width: 18, height: 18).position(x: AV.cx, y: 96)
-                Rectangle().fill(Color(hex: "#5a626b")).frame(width: 56, height: 3).position(x: AV.cx, y: 84)
+                // shoulder pauldrons
+                Circle().fill(LinearGradient(colors: [Color(hex: "#d6dce2"), Color(hex: "#79828c")],
+                                             startPoint: .top, endPoint: .bottom))
+                    .frame(width: 26, height: 22).position(x: 52, y: 84)
+                Circle().fill(LinearGradient(colors: [Color(hex: "#d6dce2"), Color(hex: "#79828c")],
+                                             startPoint: .top, endPoint: .bottom))
+                    .frame(width: 26, height: 22).position(x: 108, y: 84)
+                // pectoral seams
+                Rectangle().fill(Color(hex: "#5a626b")).frame(width: 2, height: 16).rotationEffect(.degrees(35)).position(x: 72, y: 98)
+                Rectangle().fill(Color(hex: "#5a626b")).frame(width: 2, height: 16).rotationEffect(.degrees(-35)).position(x: 88, y: 98)
+                // central ridge
+                Rectangle().fill(Color.white.opacity(0.45)).frame(width: 2, height: 40).position(x: AV.cx, y: 118)
+                // gold crest
+                StarMark().fill(Pal.gold).frame(width: 14, height: 14).position(x: AV.cx, y: 106)
+                // waist plate + rivets
+                Rectangle().fill(Color(hex: "#6c727b")).frame(width: 62, height: 6).position(x: AV.cx, y: 134)
+                ForEach(0..<2) { i in
+                    Circle().fill(Color(hex: "#5a626b")).frame(width: 3, height: 3).position(x: 60 + CGFloat(i) * 40, y: 128)
+                }
             }
             .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         case "haut.hoodie":
             ZStack {
                 shape.fill(Color(hex: "#5a5a5a")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
-                RoundedRectangle(cornerRadius: 8).fill(Color(hex: "#454545")).frame(width: 38, height: 14).position(x: AV.cx, y: 79)
-                Rectangle().fill(Color.white.opacity(0.7)).frame(width: 2, height: 14).position(x: AV.cx - 4, y: 90)
-                Rectangle().fill(Color.white.opacity(0.7)).frame(width: 2, height: 14).position(x: AV.cx + 4, y: 90)
-                RoundedRectangle(cornerRadius: 4).stroke(Color.black.opacity(0.3), lineWidth: 1.5).frame(width: 30, height: 16).position(x: AV.cx, y: 120)
+                // hood draping at the neck
+                RoundedRectangle(cornerRadius: 10).fill(Color(hex: "#4a4a4a")).frame(width: 46, height: 18).position(x: AV.cx, y: 80)
+                RoundedRectangle(cornerRadius: 9).fill(Color(hex: "#3d3d3d")).frame(width: 30, height: 12).position(x: AV.cx, y: 82)
+                // drawstrings with aglets
+                Rectangle().fill(Color(hex: "#d8d8d8")).frame(width: 2, height: 16).position(x: AV.cx - 5, y: 93)
+                Rectangle().fill(Color(hex: "#d8d8d8")).frame(width: 2, height: 16).position(x: AV.cx + 5, y: 93)
+                Circle().fill(Color(hex: "#d8d8d8")).frame(width: 4, height: 4).position(x: AV.cx - 5, y: 101)
+                Circle().fill(Color(hex: "#d8d8d8")).frame(width: 4, height: 4).position(x: AV.cx + 5, y: 101)
+                // kangaroo pocket
+                RoundedRectangle(cornerRadius: 4).fill(Color(hex: "#525252")).frame(width: 36, height: 18).position(x: AV.cx, y: 124)
+                RoundedRectangle(cornerRadius: 4).stroke(Color.black.opacity(0.3), lineWidth: 1.5).frame(width: 36, height: 18).position(x: AV.cx, y: 124)
             }
             .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         case "haut.maillot":
@@ -412,19 +475,32 @@ struct AvatarLayeredView: View {
             .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         case "haut.kimono":
             ZStack {
-                shape.fill(Color(hex: "#1a1a2e")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
-                Rectangle().fill(Color.white).frame(width: 16, height: 2).rotationEffect(.degrees(42)).position(x: 72, y: 84)
-                Rectangle().fill(Color.white).frame(width: 16, height: 2).rotationEffect(.degrees(-42)).position(x: 88, y: 84)
-                Rectangle().fill(Color(hex: "#c8102e")).frame(width: 62, height: 10).position(x: AV.cx, y: 112)
+                shape.fill(Color(hex: "#ededed")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
+                // white collar crossing into a V (folds shown by a soft grey)
+                KimonoCollarShape().fill(Color(hex: "#dcdcdc")).frame(width: 46, height: 42).position(x: AV.cx, y: 97)
+                KimonoCollarShape().stroke(Color.black.opacity(0.18), lineWidth: 1).frame(width: 46, height: 42).position(x: AV.cx, y: 97)
+                // black obi belt
+                Rectangle().fill(Color(hex: "#111318")).frame(width: 62, height: 13).position(x: AV.cx, y: 122)
+                Rectangle().fill(Color.white.opacity(0.12)).frame(width: 62, height: 1).position(x: AV.cx, y: 117)
+                Rectangle().fill(Color.white.opacity(0.12)).frame(width: 62, height: 1).position(x: AV.cx, y: 127)
+                // obi knot
+                RoundedRectangle(cornerRadius: 2).fill(Color(hex: "#1b1e26")).frame(width: 14, height: 11).position(x: AV.cx, y: 122)
             }
             .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         case "haut.combinaison":
             ZStack {
-                shape.fill(Color(hex: "#e8edf2")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
-                Rectangle().fill(Color(hex: "#9aa0a6")).frame(width: 42, height: 5).position(x: AV.cx, y: 80)
-                RoundedRectangle(cornerRadius: 3).fill(Color(hex: "#2c2c2c")).frame(width: 22, height: 15).position(x: AV.cx, y: 102)
-                Circle().fill(accent).frame(width: 4, height: 4).position(x: AV.cx - 4, y: 102)
-                Circle().fill(Theme.bad).frame(width: 4, height: 4).position(x: AV.cx + 4, y: 102)
+                shape.fill(Color(hex: "#3f4b5c")).frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1)
+                // open collar
+                CampCollarShape().fill(Color(hex: "#4a586b")).frame(width: 40, height: 16).position(x: AV.cx, y: 84)
+                // center zipper + pull
+                Rectangle().fill(Color(hex: "#c9cdd3")).frame(width: 2, height: 42).position(x: AV.cx, y: 108)
+                RoundedRectangle(cornerRadius: 1).fill(Color(hex: "#e6e9ec")).frame(width: 4, height: 6).position(x: AV.cx, y: 92)
+                // chest pockets
+                RoundedRectangle(cornerRadius: 2).stroke(Color.black.opacity(0.3), lineWidth: 1.2).frame(width: 14, height: 12).position(x: 66, y: 100)
+                RoundedRectangle(cornerRadius: 2).stroke(Color.black.opacity(0.3), lineWidth: 1.2).frame(width: 14, height: 12).position(x: 94, y: 100)
+                // waist belt + buckle
+                Rectangle().fill(Color(hex: "#2c3542")).frame(width: 62, height: 8).position(x: AV.cx, y: 124)
+                RoundedRectangle(cornerRadius: 1).fill(accent).frame(width: 8, height: 8).position(x: AV.cx, y: 124)
             }
             .mask(shape.frame(width: 62, height: 70).position(x: AV.cx, y: AV.torsoCY + 1))
         default:
@@ -638,34 +714,34 @@ struct AvatarLayeredView: View {
             ZStack {
                 Ellipse().fill(Pal.hat).frame(width: 50, height: 10).position(x: AV.cx, y: 32)
                 RoundedRectangle(cornerRadius: 12).fill(Pal.hat).frame(width: 40, height: 22).position(x: AV.cx, y: 24)
-                Rectangle().fill(Theme.faint).frame(width: 40, height: 3).position(x: AV.cx, y: 30)
+                Rectangle().fill(Pal.hatShade).frame(width: 40, height: 3).position(x: AV.cx, y: 30)
             }
         case "tete.casquette":
             ZStack {
                 CapShape().fill(Pal.hat).frame(width: 46, height: 22).position(x: AV.cx, y: 28)
-                Ellipse().fill(Color(hex: "#1c1c1c")).frame(width: 26, height: 7).position(x: AV.cx + 16, y: 33)
+                Ellipse().fill(Pal.hatShade).frame(width: 26, height: 7).position(x: AV.cx + 16, y: 33)
             }
         case "tete.bonnet":
             ZStack {
                 RoundedRectangle(cornerRadius: 10).fill(Pal.hat).frame(width: 46, height: 26).position(x: AV.cx, y: 25)
-                Rectangle().fill(Theme.faint).frame(width: 46, height: 5).position(x: AV.cx, y: 35)
+                Rectangle().fill(Pal.hatShade).frame(width: 46, height: 5).position(x: AV.cx, y: 35)
                 Circle().fill(Pal.hat).frame(width: 9, height: 9).position(x: AV.cx, y: 10)
             }
         case "tete.beret":
             ZStack {
-                Ellipse().fill(Color(hex: "#1f1f1f")).frame(width: 46, height: 22)
+                Ellipse().fill(Pal.hat).frame(width: 46, height: 22)
                     .rotationEffect(.degrees(-10)).position(x: AV.cx, y: 24)
-                Circle().fill(Pal.hat).frame(width: 6, height: 6).position(x: AV.cx, y: 13)
+                Circle().fill(Pal.hatShade).frame(width: 6, height: 6).position(x: AV.cx, y: 13)
             }
         case "tete.hautdeforme":
             ZStack {
-                Ellipse().fill(Pal.cloth3).frame(width: 50, height: 9).position(x: AV.cx, y: 27)
-                Rectangle().fill(Pal.cloth3).frame(width: 32, height: 26).position(x: AV.cx, y: 14)
+                Ellipse().fill(Pal.hat).frame(width: 50, height: 9).position(x: AV.cx, y: 27)
+                Rectangle().fill(Pal.hat).frame(width: 32, height: 26).position(x: AV.cx, y: 14)
                 Rectangle().fill(Theme.bad.opacity(0.7)).frame(width: 32, height: 4).position(x: AV.cx, y: 22)
             }
         case "tete.casque":
             ZStack {
-                ArcBandShape().stroke(Pal.cloth1, lineWidth: 5)
+                ArcBandShape().stroke(Pal.hat, lineWidth: 5)
                     .frame(width: 56, height: 40).position(x: AV.cx, y: 30)
                 RoundedRectangle(cornerRadius: 4).fill(accent).frame(width: 11, height: 18).position(x: AV.cx - 27, y: 40)
                 RoundedRectangle(cornerRadius: 4).fill(accent).frame(width: 11, height: 18).position(x: AV.cx + 27, y: 40)
@@ -695,9 +771,9 @@ struct AvatarLayeredView: View {
             }
         case "tete.melon":
             ZStack {
-                Ellipse().fill(Color(hex: "#1f1f1f")).frame(width: 48, height: 9).position(x: AV.cx, y: 31)
-                Capsule().fill(Color(hex: "#1f1f1f")).frame(width: 34, height: 26).position(x: AV.cx, y: 20)
-                Rectangle().fill(Color(hex: "#3a3a3a")).frame(width: 34, height: 4).position(x: AV.cx, y: 29)
+                Ellipse().fill(Pal.hat).frame(width: 48, height: 9).position(x: AV.cx, y: 31)
+                Capsule().fill(Pal.hat).frame(width: 34, height: 26).position(x: AV.cx, y: 20)
+                Rectangle().fill(Pal.hatShade).frame(width: 34, height: 4).position(x: AV.cx, y: 29)
             }
         case "tete.cowboy":
             ZStack {
@@ -1084,6 +1160,90 @@ private struct ArcBandShape: Shape {
         var p = Path()
         p.addArc(center: CGPoint(x: r.midX, y: r.maxY), radius: r.width / 2,
                  startAngle: .degrees(180), endAngle: .degrees(360), clockwise: false)
+        return p
+    }
+}
+
+// V-neck / open shirt (triangle, apex pointing down)
+private struct VNeckShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX, y: r.maxY))
+        p.closeSubpath()
+        return p
+    }
+}
+
+// Two suit lapels flanking a central V opening, meeting at bottom-center
+private struct LapelShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let notch = r.width * 0.16
+        p.move(to: CGPoint(x: r.minX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX - notch, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.minX, y: r.minY + r.height * 0.6))
+        p.closeSubpath()
+        p.move(to: CGPoint(x: r.maxX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX + notch, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.minY + r.height * 0.6))
+        p.closeSubpath()
+        return p
+    }
+}
+
+// Bow tie: two triangles meeting at the center knot
+private struct BowTieShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.midX, y: r.midY))
+        p.addLine(to: CGPoint(x: r.minX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.minX, y: r.maxY))
+        p.closeSubpath()
+        p.move(to: CGPoint(x: r.midX, y: r.midY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        p.closeSubpath()
+        return p
+    }
+}
+
+// Kimono collar: two crossed bands forming a V, meeting at bottom-center
+private struct KimonoCollarShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let bw = r.width * 0.16
+        p.move(to: CGPoint(x: r.minX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.minX + bw, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX + bw * 0.4, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.midX - bw * 0.6, y: r.maxY))
+        p.closeSubpath()
+        p.move(to: CGPoint(x: r.maxX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX - bw, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX - bw * 0.4, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.midX + bw * 0.6, y: r.maxY))
+        p.closeSubpath()
+        return p
+    }
+}
+
+// Open camp collar: two triangular flaps with a gap at the neck
+private struct CampCollarShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX - r.width * 0.06, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX - r.width * 0.18, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.minX, y: r.minY + r.height * 0.5))
+        p.closeSubpath()
+        p.move(to: CGPoint(x: r.maxX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX + r.width * 0.06, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX + r.width * 0.18, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.minY + r.height * 0.5))
+        p.closeSubpath()
         return p
     }
 }

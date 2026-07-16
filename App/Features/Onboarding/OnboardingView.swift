@@ -6,7 +6,10 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(PlayerStore.self) private var store
     @Environment(\.accent) private var accent
-    @State private var pseudo = "RetroKid"
+    /// Volontairement vide : quand le champ était pré-rempli avec "RetroKid", la
+    /// plupart des joueurs validaient sans y toucher et se retrouvaient tous
+    /// homonymes. Les pseudos étant désormais uniques, il faut un choix explicite.
+    @State private var claim = PseudoClaim()
 
     var body: some View {
         VStack(spacing: Space.lg) {
@@ -21,26 +24,26 @@ struct OnboardingView: View {
 
             AvatarLayeredView(look: store.avatarLook, scale: 1.0)
 
-            VStack(alignment: .leading, spacing: Space.xs) {
-                SectionLabel("Pseudo")
-                TextField("", text: $pseudo)
-                    .font(KFont.mono(18))
-                    .foregroundStyle(Theme.text)
-                    .tint(accent)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .kPanel()
+            PseudoField(claim: claim) { start() }
+                .kPanel()
 
-            PixelButton(title: "Press start") {
-                store.completeOnboarding(pseudo: pseudo)
-            }
+            PixelButton(title: claim.isBusy ? "..." : "Press start") { start() }
+                .disabled(claim.isBusy || !claim.isLengthValid)
 
             Spacer()
         }
         .padding(.horizontal, Space.lg)
         .screenBackground()
+    }
+
+    /// N'entre dans l'app qu'une fois le pseudo réservé : sinon le joueur
+    /// démarrerait sous un pseudo que le serveur refusera à la première sync.
+    private func start() {
+        Task {
+            if await claim.submit(into: store) {
+                store.completeOnboarding(pseudo: claim.trimmed)
+            }
+        }
     }
 }
 

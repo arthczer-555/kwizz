@@ -9,13 +9,12 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
 
 @Suite struct LevelTableTests {
     @Test func shape() {
-        #expect(LevelTable.titles.count == 20)
         #expect(LevelTable.xpToNext.count == 19)
         #expect(LevelTable.cumulative.count == 20)
         #expect(LevelTable.cumulative.first == 0)
         #expect(LevelTable.totalToMax == 238_850)
-        #expect(LevelTable.titles.first == "L'américain moyen")
-        #expect(LevelTable.titles.last == "Émilien")
+        #expect(LevelTable.title(level: 1) == "Niveau 1")
+        #expect(LevelTable.title(level: 20) == "Niveau 20")
         for i in 1..<LevelTable.cumulative.count {
             #expect(LevelTable.cumulative[i] > LevelTable.cumulative[i - 1])
         }
@@ -56,6 +55,24 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
     }
 }
 
+@Suite struct GameModeTests {
+    /// Toute manche à compteur fixe fait 15 questions ; seul le Duel, joué en
+    /// direct contre un adversaire, reste plus court.
+    @Test func questionCounts() {
+        #expect(GameMode.standardQuestionCount == 15)
+        for mode in [GameMode.classique, .entrainement] {
+            #expect(mode.questionCount == 15)
+        }
+        // Manches plus courtes : direct contre un adversaire, et grille du jour.
+        #expect(GameMode.duel.questionCount == 7)
+        #expect(GameMode.defi.questionCount == 10)
+        #expect(DailyChallenge.questionCount == 10)
+        // Bornés par autre chose qu'un compteur : 60 s, et la 1re erreur.
+        #expect(GameMode.contreLaMontre.questionCount == nil)
+        #expect(GameMode.survie.questionCount == nil)
+    }
+}
+
 @Suite struct ScoringEconomyTests {
     @Test func scoring() {
         #expect(Scoring.questionScore(correct: true, remainingFraction: 1.0, hasSpeedBonus: true) == 200)
@@ -73,8 +90,12 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
             Economy.Input(mode: mode, coinMultiplier: diff.coinMultiplier, correctCount: correct, total: total,
                           perfect: perfect, bestStreak: streak, fastCount: fast, scoreFraction: frac, duelWon: duel)
         }
-        #expect(Economy.coins(input(.entrainement, .facile, correct: 55)) == 5)
-        #expect(Economy.coins(input(.classique, .normal, correct: 20)) == 30)
+        // Entraînement: 1 pièce par 3 bonnes réponses, cap 20/jour appliqué par le store.
+        #expect(Economy.coins(input(.entrainement, .facile, correct: 15, total: 15)) == 5)
+        #expect(Economy.coins(input(.entrainement, .facile, correct: 2, total: 15)) == 0)
+        // Classique: base x multiplicateur de difficulté, puis +20% (classiqueBonus).
+        #expect(Economy.coins(input(.classique, .normal, correct: 15, total: 15)) == 27)
+        #expect(Economy.coins(input(.classique, .facile, correct: 10, total: 15)) == 12)
         #expect(Economy.coins(input(.contreLaMontre, .normal, correct: 14)) == 21)
         #expect(Economy.coins(input(.survie, .facile, correct: 12, streak: 12)) == 14)
         #expect(Economy.coins(input(.duel, duel: true)) == 15)
@@ -205,6 +226,26 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
         let s2 = bank.query(categoryID: "sport", difficulty: nil, count: 2, seed: 7).map(\.id)
         #expect(s1 == s2)
         #expect(bank.query(categoryID: Category.melange.id, difficulty: nil, count: 2).count == 2)
+    }
+
+    /// Entraînement « toutes les difficultés » : la banque ne filtre pas, et la
+    /// manche paie la moyenne des multiplicateurs des questions réussies.
+    @Test func allDifficultiesTraining() {
+        let pool = [q("f", diff: .facile), q("n", diff: .normal), q("d", diff: .difficile)]
+        let drawn = QuestionBank(all: pool).query(categoryID: nil, difficulty: nil, count: 3)
+        #expect(Set(drawn.map(\.difficulty)) == Set(Difficulty.allCases))
+
+        var session = QuizSession(mode: .entrainement, difficulty: nil, categoryID: "histoire", questions: pool)
+        for _ in pool {
+            session.submit(answerIndex: 0, remainingFraction: 1)
+            session.advance()
+        }
+        let result = session.makeResult(previousBest: 0)
+        #expect(result.difficulty == nil)
+        #expect(result.correctCount == 3)
+        // Un tirage mixte s'enregistre sous une clé de record distincte.
+        #expect(PlayerProfile.recordKey(mode: .entrainement, categoryID: "histoire", difficulty: nil)
+                == "entrainement|histoire|toutes")
     }
 
     @Test func catalogIntegrity() {

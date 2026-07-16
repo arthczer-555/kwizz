@@ -60,25 +60,30 @@ banque de questions. **Statut actuel : 75/75.**
 
 ## Ce qui est implémenté (MVP)
 
-- **7 modes** : Classique (15 questions, meilleur score), Contre-la-montre (60 s),
-  Survie (mort subite), Marathon (30+), Libre (sans chrono), Duel (vs bot),
-  Défi du jour (grille locale déterministe).
-- **3 difficultés** (×1 / ×1,5 / ×2,5 sur les gains, temps 20/15/10 s).
+- **6 modes** : Classique (15 questions, meilleur score, gains +20 %),
+  Contre-la-montre (60 s), Survie (mort subite), Duel (7 questions, en ligne via
+  un code de salon), Défi du jour (grille de 10 déterministe, 1 essai/jour),
+  Entraînement (15 questions, thème + difficulté au choix, sans chrono).
+  Hors `GameMode` : la **Ligue 1v1** classée (7 questions, arbitrage serveur).
+- **3 difficultés** (×1 / ×1,5 / ×2,5 sur les gains), plus « Toutes » en
+  Entraînement. Le temps par question est uniforme (15 s) dans les modes chronométrés.
 - **Score arcade** : 100 par bonne réponse + jusqu'à +100 de bonus de vitesse.
 - **Économie serrée** (pièces uniquement) + **XP durcie** (niveau 1 → 20).
 - **Avatar central** sur l'accueil (silhouette + ombre, placeholder), **boutique** et
   **vestiaire** cosmétiques, **classement local** (démo), **profil**, **succès**, **réglages**.
 - **Personnalisation de l'accent** (vert / ambre / cyan / mono) dans les réglages.
 - Persistance locale (profil, pièces, items, records, séries).
+- **Pseudos uniques** : réservés côté serveur (RPC `claim_pseudo`, index unique sur
+  `lower(pseudo)`), choisis à l'onboarding et modifiables depuis le profil. Le pseudo
+  par défaut est le premier libre (`RetroKid`, `RetroKid2`...) : un défaut constant
+  entrerait en collision et ferait échouer la création de compte anonyme.
+- **Classement général** de la Ligue : top 100 + ta place parmi tous les joueurs classés.
 
 ## Limites connues / suite
 
-- Tout le code (noyau + SwiftUI) **type-check sans erreur** contre le SDK iOS 26.5
-  Simulator (`swiftc -typecheck`), et le **noyau** est couvert par 75 tests. Pour
-  *lancer* l'app il faut installer le **runtime du simulateur iOS** (Xcode → Settings →
-  Components), pas encore présent sur la machine.
 - Avatars et items sont des **placeholders** (visuels à créer plus tard).
-- Classement, Duel PvP réel et synchronisation du Défi → **phase 2** (backend).
+- Le classement est en ligne (Supabase) ; le **classement local** de la démo reste
+  affiché à certains endroits.
 
 ## Structure
 

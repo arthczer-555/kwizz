@@ -2,7 +2,7 @@ import Foundation
 
 /// A way to play. All five modes ship in the MVP. `duel` runs against a bot and
 /// `defi` (daily challenge) is generated locally and deterministically, so none
-/// of them require a backend. `classique` is a 20-question round where the goal
+/// of them require a backend. `classique` is a 15-question round where the goal
 /// is the most correct answers.
 public enum GameMode: String, CaseIterable, Codable, Sendable, Identifiable {
     case classique
@@ -27,7 +27,7 @@ public enum GameMode: String, CaseIterable, Codable, Sendable, Identifiable {
 
     public var subtitle: String {
         switch self {
-        case .classique: "20 questions, max de bonnes réponses"
+        case .classique: "15 questions, max de bonnes réponses"
         case .contreLaMontre: "max de bonnes en 60s"
         case .survie: "jusqu'à la 1re erreur"
         case .duel: "2 à 6 joueurs en ligne"
@@ -48,17 +48,21 @@ public enum GameMode: String, CaseIterable, Codable, Sendable, Identifiable {
         }
     }
 
+    /// Standard round length, shared by every mode with a fixed question count.
+    /// Duel and Défi keep shorter rounds: one is played live against an opponent,
+    /// the other is a one-shot daily grid.
+    public static let standardQuestionCount = 15
+
     /// Fixed number of questions for the mode, or nil when it is open-ended
-    /// (survie until first wrong, entraînement until the player quits) or globally
-    /// timed (contre-la-montre is bounded by `globalTime`, not by a question count).
+    /// (survie until first wrong) or globally timed (contre-la-montre is bounded
+    /// by `globalTime`, not by a question count).
     public var questionCount: Int? {
         switch self {
         case .duel: 7
-        case .defi: 10
-        case .classique: 20
+        case .defi: DailyChallenge.questionCount
+        case .classique, .entrainement: Self.standardQuestionCount
         case .contreLaMontre: nil
         case .survie: nil
-        case .entrainement: nil
         }
     }
 
@@ -86,8 +90,9 @@ public enum GameMode: String, CaseIterable, Codable, Sendable, Identifiable {
     /// Survie ends on the first wrong answer.
     public var endsOnFirstWrong: Bool { self == .survie }
 
-    /// A free, open-ended practice mode: it never feeds the records and its coins
-    /// are capped daily. Entraînement lets the player pick a theme and a difficulty.
+    /// A free practice mode: it never feeds the records and its coins are capped
+    /// daily. Entraînement lets the player pick a theme and a difficulty (or all
+    /// difficulties at once).
     public var isTraining: Bool { self == .entrainement }
 
     /// Whether the mode contributes to the personal best-score records.

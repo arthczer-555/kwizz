@@ -145,14 +145,6 @@ struct LevelUpView: View {
                 Text("LEVEL UP").font(KFont.mono(13, bold: true)).tracking(3).foregroundStyle(accent)
                 ScoreText(value: level, size: 56)
                 AvatarLayeredView(look: AvatarLook(level: level), scale: 0.7, showShadow: false, ring: accent)
-                VStack(spacing: 8) {
-                    SectionLabel("Nouveau titre")
-                    Text(LevelTable.title(level: level))
-                        .font(KFont.mono(16)).foregroundStyle(Theme.text)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .kPanel()
                 HStack(spacing: 30) {
                     if rewardCoins > 0 {
                         VStack(spacing: 5) { CoinLabel(amount: rewardCoins); SectionLabel("Pièces") }

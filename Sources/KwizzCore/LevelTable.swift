@@ -15,33 +15,9 @@ public struct LevelReward: Sendable, Equatable {
     public let itemRarity: Rarity?
 }
 
-/// The 20-level progression. Hardened curve: ~239 000 XP to reach level 20
-/// ("Émilien"), which should stay a rare achievement.
+/// The 20-level progression. Hardened curve: ~239 000 XP to reach level 20.
 public enum LevelTable {
     public static let maxLevel = 20
-
-    public static let titles: [String] = [
-        "L'américain moyen",
-        "Le pilier gauche",
-        "Le cancre",
-        "Roi du quiz de comptoir",
-        "Bachelier (mention pas de mention)",
-        "Pilier de PMU cultivé",
-        "Le gars qui a appris toutes les capitales",
-        "Tête de classe",
-        "Crack du Trivial Pursuit",
-        "Cerveau de la bande",
-        "Bac +5 en culture G",
-        "Bête de concours",
-        "Encyclopédie ambulante",
-        "Champion de Burger Quiz",
-        "Mentaliste",
-        "Génie incompris",
-        "Membre du Mensa",
-        "La daronne au jeu des mille euros",
-        "Wikipedia",
-        "Émilien",
-    ]
 
     /// XP needed to go from level i (1-based) to level i+1. 19 entries.
     public static let xpToNext: [Int] = [
@@ -64,7 +40,7 @@ public enum LevelTable {
 
     public static func title(level: Int) -> String {
         let clamped = min(max(level, 1), maxLevel)
-        return titles[clamped - 1]
+        return "Niveau \(clamped)"
     }
 
     public static func level(totalXP: Int) -> Int {

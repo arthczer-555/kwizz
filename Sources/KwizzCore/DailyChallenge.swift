@@ -3,6 +3,8 @@ import Foundation
 /// Builds the Daily Challenge grid. Deterministic: the same calendar day yields
 /// the same questions for everyone, with no server involved.
 public enum DailyChallenge {
+    /// The daily grid stays shorter than a standard round: one attempt per day,
+    /// heavily front-loaded payout, so it must stay quick to play.
     public static let questionCount = 10
 
     /// A compact integer key for a calendar day, e.g. 2026_06_05 -> 20260605.

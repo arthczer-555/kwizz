@@ -52,9 +52,19 @@ struct RankedLadderView: View {
                 RankFrieze(current: tier)
 
                 if !board.isEmpty {
-                    SectionLabel("Top joueurs")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    VStack(spacing: 6) { ForEach(board) { row($0) } }
+                    HStack {
+                        SectionLabel("Top joueurs")
+                        Spacer()
+                        NavigationLink(value: Route.rankedLeaderboard) {
+                            Text("classement général →")
+                                .font(KFont.mono(11))
+                                .foregroundStyle(accent)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    VStack(spacing: 6) {
+                        ForEach(board) { RankedRow(entry: $0, isMe: $0.user_id == SupabaseService.shared.userID) }
+                    }
                 }
             }
             .screenPadding()
@@ -83,27 +93,13 @@ struct RankedLadderView: View {
         .kPanel(18)
     }
 
-    private func row(_ e: SupabaseService.RankedLeaderboardEntry) -> some View {
-        let isMe = e.user_id == SupabaseService.shared.userID
-        return HStack(spacing: 12) {
-            Text("\(e.rank)")
-                .font(KFont.mono(13, bold: true))
-                .foregroundStyle(e.rank <= 3 ? accent : Theme.muted)
-                .frame(minWidth: 30, alignment: .leading)
-            Text(e.pseudo).font(KFont.mono(13, bold: isMe)).lineLimit(1)
-            Spacer()
-            Text("\(e.rating)").font(KFont.mono(13, bold: true)).foregroundStyle(isMe ? accent : Theme.text)
-        }
-        .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(isMe ? accent.opacity(0.12) : Theme.surface)
-        .overlay(Rectangle().stroke(isMe ? accent : Theme.border, lineWidth: 1))
-    }
-
     private func load() async {
         loading = true
         await SupabaseService.shared.start()
         stats = await SupabaseService.shared.myRankedStats()
-        board = await SupabaseService.shared.rankedLeaderboard()
+        // Simple aperçu : le classement complet (top 100 + ma place) est derrière
+        // le lien "classement général".
+        board = await SupabaseService.shared.rankedLeaderboard(limit: 5)
         loading = false
     }
 }

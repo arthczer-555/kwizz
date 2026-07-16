@@ -15,6 +15,7 @@ enum Route: Hashable {
     case settings
     case admin
     case duelEntry
+    case rankedLeaderboard
 }
 
 @MainActor
@@ -88,7 +89,8 @@ final class Router {
         tab = .rank
     }
 
-    func startGame(mode: GameMode, category: Category?, subcategory: Subcategory?, difficulty: Difficulty) {
+    /// `difficulty` is nil when the player picked "toutes les difficultés" (Entraînement).
+    func startGame(mode: GameMode, category: Category?, subcategory: Subcategory?, difficulty: Difficulty?) {
         let session = store.makeSession(mode: mode, category: category, subcategory: subcategory, difficulty: difficulty)
         // `fullScreenCover(item:)` only (re)presents on a nil <-> non-nil change, so
         // when replaying (a game is already active) we must pass through nil first.

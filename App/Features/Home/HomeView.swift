@@ -20,10 +20,6 @@ struct HomeView: View {
                     Text(store.profile.pseudo)
                         .font(KFont.mono(18, bold: true))
                         .foregroundStyle(Theme.text)
-
-                    Text(store.profile.title)
-                        .font(KFont.body(13))
-                        .foregroundStyle(Theme.muted)
                 }
                 .padding(.top, 4)
 

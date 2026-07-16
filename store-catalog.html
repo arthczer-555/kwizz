@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kwizz - Catalogue du Store</title>
+<style>
+  :root {
+    --bg: #0f0f14;
+    --surface: #1a1a24;
+    --border: #2a2a38;
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --commun: #9aa0a6;
+    --rare: #38d6ff;
+    --epique: #c084fc;
+    --legendaire: #ffb000;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    padding: 24px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #fff;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    margin-bottom: 28px;
+    font-size: 13px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .section {
+    margin-bottom: 32px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #1e1e2a;
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: #1e1e2c; }
+
+  .item-id {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .item-name {
+    font-weight: 500;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  .badge-commun    { color: var(--commun);    border-color: var(--commun);    background: rgba(154,160,166,.08); }
+  .badge-rare      { color: var(--rare);      border-color: var(--rare);      background: rgba(56,214,255,.08); }
+  .badge-epique    { color: var(--epique);    border-color: var(--epique);    background: rgba(192,132,252,.08); }
+  .badge-legendaire{ color: var(--legendaire);border-color: var(--legendaire);background: rgba(255,176,0,.08); }
+
+  .price {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .price-coin::before {
+    content: "🪙 ";
+    font-size: 12px;
+  }
+
+  .unlock-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,176,0,.12);
+    color: var(--legendaire);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(255,176,0,.3);
+  }
+
+  .stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    min-width: 110px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .count-tag {
+    margin-left: 8px;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  th.thumb-h { width: 70px; }
+
+  td.thumb { width: 70px; padding: 4px 10px; }
+
+  td.thumb svg {
+    display: block;
+    width: 56px;
+    height: 58px;
+    border-radius: 7px;
+    background: #101014;
+    border: 1px solid #20202c;
+  }
+</style>
+</head>
+<body>
+
+<h1>Catalogue du Store - Kwizz</h1>
+<p class="subtitle">Source : <code>KwizzCore/AvatarItem.swift</code> — 9 slots, 83 items</p>
+
+<div class="legend">
+  <span class="legend-item"><span class="dot" style="background:#9aa0a6"></span>Commun</span>
+  <span class="legend-item"><span class="dot" style="background:#38d6ff"></span>Rare</span>
+  <span class="legend-item"><span class="dot" style="background:#c084fc"></span>Épique</span>
+  <span class="legend-item"><span class="dot" style="background:#ffb000"></span>Légendaire</span>
+</div>
+
+<div class="stats">
+  <div class="stat-card"><div class="stat-value">83</div><div class="stat-label">Items total</div></div>
+  <div class="stat-card"><div class="stat-value" style="color:var(--commun)">29</div><div class="stat-label">Commun</div></div>
+  <div class="stat-card"><div class="stat-value" style="color:var(--rare)">28</div><div class="stat-label">Rare</div></div>
+  <div class="stat-card"><div class="stat-value" style="color:var(--epique)">20</div><div class="stat-label">Épique</div></div>
+  <div class="stat-card"><div class="stat-value" style="color:var(--legendaire)">6 + 5🔒</div><div class="stat-label">Légendaire</div></div>
+  <div class="stat-card"><div class="stat-value">9</div><div class="stat-label">Slots</div></div>
+</div>
+
+<!-- TETE -->
+<div class="section">
+  <div class="section-title">Tête <span class="count-tag">13</span></div>
+  <table>
+    <thead><tr><th>ID</th><th>Nom</th><th>Rareté</th><th>Prix / Débloqué</th></tr></thead>
+    <tbody>
+      <tr><td class="item-id">tete.bob</td><td class="item-name">Bob bucket</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">210</span></td></tr>
+      <tr><td class="item-id">tete.casquette</td><td class="item-name">Casquette</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">230</span></td></tr>
+      <tr><td class="item-id">tete.serretete</td><td class="item-name">Serre-tête nœud</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">250</span></td></tr>
+      <tr><td class="item-id">tete.bonnet</td><td class="item-name">Bonnet à pompon</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">280</span></td></tr>
+      <tr><td class="item-id">tete.beret</td><td class="item-name">Béret d'intello</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">550</span></td></tr>
+      <tr><td class="item-id">tete.melon</td><td class="item-name">Chapeau melon</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">700</span></td></tr>
+      <tr><td class="item-id">tete.hautdeforme</td><td class="item-name">Haut-de-forme</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">750</span></td></tr>
+      <tr><td class="item-id">tete.cowboy</td><td class="item-name">Chapeau cowboy</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">820</span></td></tr>
+      <tr><td class="item-id">tete.casque</td><td class="item-name">Casque audio rétro</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">950</span></td></tr>
+      <tr><td class="item-id">tete.toque</td><td class="item-name">Toque de chef</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">1 700</span></td></tr>
+      <tr><td class="item-id">tete.viking</td><td class="item-name">Casque viking</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 400</span></td></tr>
+      <tr><td class="item-id">tete.aureole</td><td class="item-name">Auréole clignotante</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 600</span></td></tr>
+      <tr><td class="item-id">tete.couronne</td><td class="item-name">Couronne</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="unlock-level">🔒 Niveau 20</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- CHEVEUX -->
+<div class="section">
+  <div class="section-title">Cheveux <span class="count-tag">12</span></div>
+  <table>
+    <thead><tr><th>ID</th><th>Nom</th><th>Rareté</th><th>Prix / Débloqué</th></tr></thead>
+    <tbody>
+      <tr><td class="item-id">cheveux.couettes</td><td class="item-name">Couettes</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">220</span></td></tr>
+      <tr><td class="item-id">cheveux.carre</td><td class="item-name">Carré court</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">240</span></td></tr>
+      <tr><td class="item-id">cheveux.banane</td><td class="item-name">Banane gominée</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">260</span></td></tr>
+      <tr><td class="item-id">cheveux.afro</td><td class="item-name">Coupe afro</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">600</span></td></tr>
+      <tr><td class="item-id">cheveux.fleurs</td><td class="item-name">Couronne de fleurs</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">720</span></td></tr>
+      <tr><td class="item-id">cheveux.tresses</td><td class="item-name">Tresses arc-en-ciel</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">850</span></td></tr>
+      <tr><td class="item-id">cheveux.mulet</td><td class="item-name">Mulet assumé</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">1 600</span></td></tr>
+      <tr><td class="item-id">cheveux.dragon</td><td class="item-name">Chignon dragon</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 000</span></td></tr>
+      <tr><td class="item-id">cheveux.mohawk</td><td class="item-name">Mohawk néon</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 100</span></td></tr>
+      <tr><td class="item-id">cheveux.flammes</td><td class="item-name">Cheveux en flammes</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="price price-coin">6 000</span></td></tr>
+      <tr><td class="item-id">cheveux.galaxie</td><td class="item-name">Chevelure galaxie</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="price price-coin">8 000</span></td></tr>
+      <tr><td class="item-id">cheveux.hologramme</td><td class="item-name">Chevelure hologramme</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="unlock-level">🔒 Niveau 10</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- LUNETTES -->
+<div class="section">
+  <div class="section-title">Lunettes <span class="count-tag">12</span></div>
+  <table>
+    <thead><tr><th>ID</th><th>Nom</th><th>Rareté</th><th>Prix / Débloqué</th></tr></thead>
+    <tbody>
+      <tr><td class="item-id">lunettes.carrees</td><td class="item-name">Lunettes carrées</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">210</span></td></tr>
+      <tr><td class="item-id">lunettes.rondes</td><td class="item-name">Lunettes rondes</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">240</span></td></tr>
+      <tr><td class="item-id">lunettes.soleil</td><td class="item-name">Lunettes de soleil</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">300</span></td></tr>
+      <tr><td class="item-id">lunettes.coeur</td><td class="item-name">Lunettes cœur</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">330</span></td></tr>
+      <tr><td class="item-id">lunettes.neon</td><td class="item-name">Lunettes néon</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">580</span></td></tr>
+      <tr><td class="item-id">lunettes.pixel</td><td class="item-name">Lunettes pixel</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">780</span></td></tr>
+      <tr><td class="item-id">lunettes.aviateur</td><td class="item-name">Aviateur miroir</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">900</span></td></tr>
+      <tr><td class="item-id">lunettes.monocle</td><td class="item-name">Monocle de génie</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">1 650</span></td></tr>
+      <tr><td class="item-id">lunettes.masque</td><td class="item-name">Masque arcade</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 200</span></td></tr>
+      <tr><td class="item-id">lunettes.cyber</td><td class="item-name">Visière cyberpunk</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 900</span></td></tr>
+      <tr><td class="item-id">lunettes.diamant</td><td class="item-name">Lunettes diamant</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">3 100</span></td></tr>
+      <tr><td class="item-id">lunettes.lasers</td><td class="item-name">Lunettes à lasers</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="price price-coin">9 000</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- COU -->
+<div class="section">
+  <div class="section-title">Cou <span class="count-tag">7</span></div>
+  <table>
+    <thead><tr><th>ID</th><th>Nom</th><th>Rareté</th><th>Prix / Débloqué</th></tr></thead>
+    <tbody>
+      <tr><td class="item-id">cou.foulard</td><td class="item-name">Foulard</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">240</span></td></tr>
+      <tr><td class="item-id">cou.cravate</td><td class="item-name">Cravate rouge</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">300</span></td></tr>
+      <tr><td class="item-id">cou.echarpe</td><td class="item-name">Écharpe rayée</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">700</span></td></tr>
+      <tr><td class="item-id">cou.chaine</td><td class="item-name">Chaîne en or</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">900</span></td></tr>
+      <tr><td class="item-id">cou.medaille</td><td class="item-name">Médaille d'or</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">1 100</span></td></tr>
+      <tr><td class="item-id">cou.diamants</td><td class="item-name">Collier de diamants</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">3 000</span></td></tr>
+      <tr><td class="item-id">cou.cosmique</td><td class="item-name">Pendentif cosmique</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="price price-coin">8 500</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- HAUT -->
+<div class="section">
+  <div class="section-title">Haut <span class="count-tag">13</span></div>
+  <table>
+    <thead><tr><th>ID</th><th>Nom</th><th>Rareté</th><th>Prix / Débloqué</th></tr></thead>
+    <tbody>
+      <tr><td class="item-id">haut.tshirt</td><td class="item-name">T-shirt blanc</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">200</span></td></tr>
+      <tr><td class="item-id">haut.marin</td><td class="item-name">Marinière</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">270</span></td></tr>
+      <tr><td class="item-id">haut.pull</td><td class="item-name">Pull pixel</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">320</span></td></tr>
+      <tr><td class="item-id">haut.hoodie</td><td class="item-name">Hoodie streetwear</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">340</span></td></tr>
+      <tr><td class="item-id">haut.hawaii</td><td class="item-name">Chemise hawaïenne</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">650</span></td></tr>
+      <tr><td class="item-id">haut.maillot</td><td class="item-name">Maillot de foot</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">680</span></td></tr>
+      <tr><td class="item-id">haut.kimono</td><td class="item-name">Kimono</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">950</span></td></tr>
+      <tr><td class="item-id">haut.bomber</td><td class="item-name">Bomber satin</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">1 000</span></td></tr>
+      <tr><td class="item-id">haut.veste</td><td class="item-name">Veste arcade</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">1 200</span></td></tr>
+      <tr><td class="item-id">haut.costume</td><td class="item-name">Costume</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 400</span></td></tr>
+      <tr><td class="item-id">haut.combinaison</td><td class="item-name">Combi spatiale</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 700</span></td></tr>
+      <tr><td class="item-id">haut.smoking</td><td class="item-name">Smoking pailleté</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">3 000</span></td></tr>
+      <tr><td class="item-id">haut.armure</td><td class="item-name">Armure de champion</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="unlock-level">🔒 Niveau 5</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- MAIN -->
+<div class="section">
+  <div class="section-title">Mains <span class="count-tag">8</span></div>
+  <table>
+    <thead><tr><th>ID</th><th>Nom</th><th>Rareté</th><th>Prix / Débloqué</th></tr></thead>
+    <tbody>
+      <tr><td class="item-id">main.cafe</td><td class="item-name">Tasse de café</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">250</span></td></tr>
+      <tr><td class="item-id">main.ballon</td><td class="item-name">Ballon de foot</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">320</span></td></tr>
+      <tr><td class="item-id">main.manette</td><td class="item-name">Manette de jeu</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">360</span></td></tr>
+      <tr><td class="item-id">main.micro</td><td class="item-name">Micro doré</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">850</span></td></tr>
+      <tr><td class="item-id">main.baguette</td><td class="item-name">Baguette magique</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">1 000</span></td></tr>
+      <tr><td class="item-id">main.bouclier</td><td class="item-name">Bouclier</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">1 200</span></td></tr>
+      <tr><td class="item-id">main.epee</td><td class="item-name">Épée de chevalier</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 600</span></td></tr>
+      <tr><td class="item-id">main.sabre</td><td class="item-name">Sabre laser</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="price price-coin">9 000</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- DOS -->
+<div class="section">
+  <div class="section-title">Dos <span class="count-tag">6</span></div>
+  <table>
+    <thead><tr><th>ID</th><th>Nom</th><th>Rareté</th><th>Prix / Débloqué</th></tr></thead>
+    <tbody>
+      <tr><td class="item-id">dos.sac</td><td class="item-name">Sac à dos</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">300</span></td></tr>
+      <tr><td class="item-id">dos.cape</td><td class="item-name">Cape de héros</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">900</span></td></tr>
+      <tr><td class="item-id">dos.katana</td><td class="item-name">Katana dans le dos</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">1 100</span></td></tr>
+      <tr><td class="item-id">dos.ailes</td><td class="item-name">Ailes d'ange</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 800</span></td></tr>
+      <tr><td class="item-id">dos.jetpack</td><td class="item-name">Jetpack</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">3 200</span></td></tr>
+      <tr><td class="item-id">dos.ailesdemon</td><td class="item-name">Ailes de démon</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="price price-coin">9 500</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FOND -->
+<div class="section">
+  <div class="section-title">Fond <span class="count-tag">12</span></div>
+  <table>
+    <thead><tr><th>ID</th><th>Nom</th><th>Rareté</th><th>Prix / Débloqué</th></tr></thead>
+    <tbody>
+      <tr><td class="item-id">fond.uni</td><td class="item-name">Fond uni</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">200</span></td></tr>
+      <tr><td class="item-id">fond.degrade</td><td class="item-name">Fond dégradé</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">250</span></td></tr>
+      <tr><td class="item-id">fond.damier</td><td class="item-name">Damier rétro</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">280</span></td></tr>
+      <tr><td class="item-id">fond.grille</td><td class="item-name">Grille rétro</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">520</span></td></tr>
+      <tr><td class="item-id">fond.etoiles</td><td class="item-name">Ciel étoilé</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">700</span></td></tr>
+      <tr><td class="item-id">fond.neon</td><td class="item-name">Néon ville</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">760</span></td></tr>
+      <tr><td class="item-id">fond.crt</td><td class="item-name">Fond CRT</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">1 800</span></td></tr>
+      <tr><td class="item-id">fond.aurore</td><td class="item-name">Aurore boréale</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 100</span></td></tr>
+      <tr><td class="item-id">fond.synthwave</td><td class="item-name">Fond synthwave</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 300</span></td></tr>
+      <tr><td class="item-id">fond.lave</td><td class="item-name">Champ de lave</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 600</span></td></tr>
+      <tr><td class="item-id">fond.galaxie</td><td class="item-name">Galaxie tourbillon</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">3 200</span></td></tr>
+      <tr><td class="item-id">fond.trounoir</td><td class="item-name">Trou noir animé</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="price price-coin">50 000</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- CADRE -->
+<div class="section">
+  <div class="section-title">Cadre <span class="count-tag">11</span></div>
+  <table>
+    <thead><tr><th>ID</th><th>Nom</th><th>Rareté</th><th>Prix / Débloqué</th></tr></thead>
+    <tbody>
+      <tr><td class="item-id">cadre.bois</td><td class="item-name">Cadre bois</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">230</span></td></tr>
+      <tr><td class="item-id">cadre.pixel</td><td class="item-name">Cadre pixel</td><td><span class="badge badge-commun">Commun</span></td><td><span class="price price-coin">300</span></td></tr>
+      <tr><td class="item-id">cadre.argent</td><td class="item-name">Cadre argent</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">560</span></td></tr>
+      <tr><td class="item-id">cadre.neon</td><td class="item-name">Cadre néon</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">900</span></td></tr>
+      <tr><td class="item-id">cadre.vert</td><td class="item-name">Cadre vert</td><td><span class="badge badge-rare">Rare</span></td><td><span class="price price-coin">1 100</span></td></tr>
+      <tr><td class="item-id">cadre.flammes</td><td class="item-name">Cadre flammes</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">1 900</span></td></tr>
+      <tr><td class="item-id">cadre.glace</td><td class="item-name">Cadre de glace</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 500</span></td></tr>
+      <tr><td class="item-id">cadre.lauriers</td><td class="item-name">Cadre lauriers</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">2 800</span></td></tr>
+      <tr><td class="item-id">cadre.diamant</td><td class="item-name">Cadre diamant</td><td><span class="badge badge-epique">Épique</span></td><td><span class="price price-coin">3 500</span></td></tr>
+      <tr><td class="item-id">cadre.arcenciel</td><td class="item-name">Cadre arc-en-ciel</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="unlock-level">🔒 Niveau 10</span></td></tr>
+      <tr><td class="item-id">cadre.foudre</td><td class="item-name">Cadre foudre</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="price price-coin">9 500</span></td></tr>
+      <tr><td class="item-id">cadre.or</td><td class="item-name">Cadre or</td><td><span class="badge badge-legendaire">Légendaire</span></td><td><span class="unlock-level">🔒 Niveau 15</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ *
+ * Mini-avatar renderer — a faithful SVG port of App/DesignSystem/
+ * AvatarKit.swift. Each item is drawn on the same 160x166 canvas, on
+ * the level-8 base body (like the in-app AvatarItemPreview).
+ * ------------------------------------------------------------------ */
+const NS = 'http://www.w3.org/2000/svg';
+let UID = 0;
+
+// Theme + palette (from Theme.swift / AvatarKit Pal), accent = vert.
+const T = {
+  surface:'#1b1b1b', surface2:'#202020', text:'#f0f0f0', muted:'#6b6b6b',
+  faint:'#3a3a3a', bad:'#ff5066', bg:'#161616',
+  accent:'#00ff88',
+  cloth1:'#2c2c2c', cloth2:'#242424', cloth3:'#141414',
+  hair:'#2f2f2f', hat:'#272727', gold:'#ffb000', green:'#00ff88', epic:'#c084fc',
+};
+const ACC = T.accent;
+
+// Canvas geometry (AV in AvatarKit).
+const AV = { w:160, h:166, cx:80, hcx:80, hcy:46, hd:42, torsoCY:109,
+             eyeY:44, eyeLX:72, eyeRX:88, mouthY:55 };
+
+function rgba(hex,a){
+  const h=hex.replace('#',''); const r=parseInt(h.substr(0,2),16),
+    g=parseInt(h.substr(2,2),16), b=parseInt(h.substr(4,2),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function E(tag,a){ const e=document.createElementNS(NS,tag);
+  for(const k in a){ if(a[k]!=null) e.setAttribute(k,a[k]); } return e; }
+
+// Transform for a centre-positioned primitive (.frame.position[.rotation/.scale]).
+function pT(cx,cy,rot,sx){
+  let t='';
+  if(sx===-1) t+=`matrix(-1 0 0 1 ${2*cx} 0) `;
+  if(rot) t+=`rotate(${rot} ${cx} ${cy}) `;
+  return t.trim()||null;
+}
+// Transform for a custom Shape drawn in LOCAL coords (0,0,w,h), then placed.
+function sT(cx,cy,w,h,rot,sx){
+  const x0=cx-w/2, y0=cy-h/2; let t='';
+  if(sx===-1) t+=`matrix(-1 0 0 1 ${2*cx} 0) `;
+  if(rot) t+=`rotate(${rot} ${cx} ${cy}) `;
+  t+=`translate(${x0} ${y0})`;
+  return t;
+}
+
+// Primitives ---------------------------------------------------------
+function rect(g,cx,cy,w,h,o={}){
+  const rx = o.capsule ? Math.min(w,h)/2 : o.rx;
+  g.appendChild(E('rect',{x:cx-w/2,y:cy-h/2,width:w,height:h,rx,ry:o.ry??rx,
+    fill:o.fill??'none',stroke:o.stroke,'stroke-width':o.sw,
+    'stroke-dasharray':o.dash,opacity:o.opacity,filter:o.filter,
+    'clip-path':o.clip,transform:pT(cx,cy,o.rot,o.sx)})); }
+function capsule(g,cx,cy,w,h,o={}){ rect(g,cx,cy,w,h,{...o,capsule:true}); }
+function ell(g,cx,cy,w,h,o={}){
+  g.appendChild(E('ellipse',{cx,cy,rx:w/2,ry:h/2,fill:o.fill??'none',
+    stroke:o.stroke,'stroke-width':o.sw,opacity:o.opacity,filter:o.filter,
+    'clip-path':o.clip,transform:pT(cx,cy,o.rot,o.sx)})); }
+function circ(g,cx,cy,d,o={}){ ell(g,cx,cy,d,d,o); }
+// Custom shape: d is a path generator(w,h)->localPathString.
+function shape(g,gen,cx,cy,w,h,o={}){
+  g.appendChild(E('path',{d:gen(w,h),fill:o.fill??'none',stroke:o.stroke,
+    'stroke-width':o.sw,'stroke-linecap':o.cap,opacity:o.opacity,filter:o.filter,
+    'clip-path':o.clip,transform:sT(cx,cy,w,h,o.rot,o.sx)})); }
+// Absolute path (full-canvas fonds), d already in canvas coords.
+function apath(g,d,o={}){
+  g.appendChild(E('path',{d,fill:o.fill??'none',stroke:o.stroke,
+    'stroke-width':o.sw,'stroke-linecap':o.cap,opacity:o.opacity,filter:o.filter,
+    'clip-path':o.clip})); }
+
+// Gradients / filters (added to the svg's <defs>) --------------------
+function lin(defs,stops,x1,y1,x2,y2){
+  const id='g'+(UID++); const lg=E('linearGradient',{id,x1,y1,x2,y2});
+  stops.forEach(s=>lg.appendChild(E('stop',{offset:s[0],'stop-color':s[1],'stop-opacity':s[2]??1})));
+  defs.appendChild(lg); return `url(#${id})`; }
+function radU(defs,stops,cx,cy,r){
+  const id='g'+(UID++); const rg=E('radialGradient',{id,gradientUnits:'userSpaceOnUse',cx,cy,r});
+  stops.forEach(s=>rg.appendChild(E('stop',{offset:s[0],'stop-color':s[1],'stop-opacity':s[2]??1})));
+  defs.appendChild(rg); return `url(#${id})`; }
+function rad(defs,stops,cx=0.5,cy=0.5,r=0.5){
+  const id='g'+(UID++); const rg=E('radialGradient',{id,cx,cy,r});
+  stops.forEach(s=>rg.appendChild(E('stop',{offset:s[0],'stop-color':s[1],'stop-opacity':s[2]??1})));
+  defs.appendChild(rg); return `url(#${id})`; }
+function ang(defs,stops){ // angular approximated by a rainbow linear sweep
+  return lin(defs,stops,0,0,1,1); }
+function glow(defs,color,r,op=1){
+  const id='f'+(UID++); const f=E('filter',{id,x:'-100%',y:'-100%',width:'300%',height:'300%'});
+  f.appendChild(E('feDropShadow',{dx:0,dy:0,stdDeviation:r,'flood-color':color,'flood-opacity':op}));
+  defs.appendChild(f); return `url(#${id})`; }
+function blurF(defs,r){
+  const id='f'+(UID++); const f=E('filter',{id,x:'-60%',y:'-60%',width:'220%',height:'220%'});
+  f.appendChild(E('feGaussianBlur',{stdDeviation:r})); defs.appendChild(f); return `url(#${id})`; }
+
+// Path geometry helpers ---------------------------------------------
+function unevenRect(w,h,tl,tr,br,bl){
+  return `M0,${tl} L0,${h-bl} Q0,${h} ${bl},${h} L${w-br},${h} Q${w},${h} ${w},${h-br}`
+       + ` L${w},${tr} Q${w},0 ${w-tr},0 L${tl},0 Q0,0 0,${tl} Z`; }
+
+// Custom Shape generators (local coords) ----------------------------
+const S = {
+  smile:(w,h)=>`M0,0 Q${w/2},${h*1.4} ${w},0`,
+  mohawk:(w,h)=>{ const n=4,wd=w/n; let d=`M0,${h}`; for(let i=0;i<n;i++){const x=i*wd;
+      d+=` L${x+wd/2},${(i%2)*5} L${x+wd},${h}`;} return d+' Z'; },
+  cap:(w,h)=>`M0,${h} A${w/2},${w/2} 0 0 1 ${w},${h} Z`,
+  arcBand:(w,h)=>`M0,${h} A${w/2},${w/2} 0 0 1 ${w},${h}`,
+  crown:(w,h)=>`M0,${h} L0,${h/2} L${0.25*w},${0.55*h} L${w/2},0 L${0.75*w},${0.55*h} L${w},${h/2} L${w},${h} Z`,
+  tie:(w,h)=>`M${w/2},0 L${w},${0.18*h} L${w/2},${0.32*h} L0,${0.18*h} Z `
+            +`M${w/2},${0.32*h} L${0.78*w},${h} L${w/2},${0.92*h} L${0.22*w},${h} Z`,
+  banana:(w,h)=>`M0,${h} Q${w/2},${-0.3*h} ${w},${h/2} Q${w/2},${h} 0,${h} Z`,
+  braid:(w,h)=>{ const seg=h/4; let d=`M${w/2},0`; for(let i=0;i<4;i++){const y=seg*i;
+      const x=i%2===0?w:0; d+=` Q${x},${y+seg/2} ${w/2},${y+seg}`;} return d; },
+  mullet:(w,h)=>`M0,0 L${0.18*w},${h} Q${w/2},${0.3*h} ${0.82*w},${h} L${w},0 Z`,
+  flame:(w,h)=>{ const n=3,wd=w/n; let d=`M0,${h}`; for(let i=0;i<n;i++){const x=i*wd;
+      d+=` Q${x},${h/2} ${x+wd/2},${(i%2)*8} Q${x+wd},${h/2} ${x+wd},${h}`;} return d+' Z'; },
+  teardrop:(w,h)=>`M0,0 L${w},0 Q${w},${h} ${w/2},${h} Q0,${h/2} 0,0 Z`,
+  visor:(w,h)=>`M0,${h/2} L${w},0 L${w},${0.75*h} Q${w/2},${h} 0,${0.75*h} Z`,
+  horn:(w,h)=>`M${w/2},${h} Q0,${h} 0,0 Q${0.8*w},${h/2} ${w/2},${h} Z`,
+  heart:(w,h)=>{ const t=0.28*h; return `M${w/2},${t} C${w/2-0.1*w},0 0,0 0,${t}`
+      +` C0,${0.6*h} ${w/2-0.2*w},${0.75*h} ${w/2},${h}`
+      +` C${w/2+0.2*w},${0.75*h} ${w},${0.6*h} ${w},${t}`
+      +` C${w},0 ${w/2+0.1*w},0 ${w/2},${t} Z`; },
+  triDown:(w,h)=>`M0,0 L${w},0 L${w/2},${h} Z`,
+  chain:(w,h)=>`M0,0 Q${w/2},${h} ${w},0`,
+  shield:(w,h)=>`M0,0 L${w},0 L${w},${0.55*h} Q${w},${0.95*h} ${w/2},${h} Q0,${0.95*h} 0,${0.55*h} Z`,
+  blade:(w,h)=>{ const t=0.12*h; return `M${w/2},0 L${w},${t} L${w},${h} L0,${h} L0,${t} Z`; },
+  cape:(w,h)=>{ let d=`M${0.3*w},0 L${0.7*w},0 L${w},${h}`; const n=4,st=w/n;
+      for(let i=0;i<n;i++){const nx=w-st*(i+1); d+=` Q${nx+st/2},${h-0.09*h} ${nx},${h}`;} return d+' Z'; },
+  wing:(w,h)=>`M${w},0 Q0,0 0,${0.45*h} Q${2},${h/2} ${0.34*w},${0.78*h}`
+      +` Q${0.40*w},${h} ${0.64*w},${0.88*h} Q${0.72*w},${h} ${w},0 Z`,
+  batwing:(w,h)=>`M${w},0 L0,${0.2*h} Q0,${h/2} ${0.3*w},${h}`
+      +` Q${0.42*w},${h} ${0.55*w},${0.7*h} Q${0.67*w},${0.78*h} ${0.8*w},${h}`
+      +` Q${0.9*w},${0.5*h} ${w},0 Z`,
+  pent:(w,h)=>{ const cx=w/2,cy=h/2,r=Math.min(w,h)/2; let d='';
+      for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5; const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;
+        d+=(i?' L':'M')+`${x},${y}`;} return d+' Z'; },
+  star:(w,h)=>{ const cx=w/2,cy=h/2,o=Math.min(w,h)/2,inr=o*0.45; let d='';
+      for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5; const r=i%2===0?o:inr;
+        d+=(i?' L':'M')+`${cx+Math.cos(a)*r},${cy+Math.sin(a)*r}`;} return d+' Z'; },
+  diamond:(w,h)=>`M${w/2},0 L${w},${h/2} L${w/2},${h} L0,${h/2} Z`,
+  vneck:(w,h)=>`M0,0 L${w},0 L${w/2},${h} Z`,
+  lapel:(w,h)=>{ const n=0.16*w;
+    return `M0,0 L${w/2-n},0 L${w/2},${h} L0,${0.6*h} Z `
+         + `M${w},0 L${w/2+n},0 L${w/2},${h} L${w},${0.6*h} Z`; },
+  bowTie:(w,h)=>`M${w/2},${h/2} L0,0 L0,${h} Z M${w/2},${h/2} L${w},0 L${w},${h} Z`,
+  kimonoCollar:(w,h)=>{ const bw=0.16*w;
+    return `M0,0 L${bw},0 L${w/2+bw*0.4},${h} L${w/2-bw*0.6},${h} Z `
+         + `M${w},0 L${w-bw},0 L${w/2-bw*0.4},${h} L${w/2+bw*0.6},${h} Z`; },
+  campCollar:(w,h)=>`M0,0 L${w/2-0.06*w},0 L${w/2-0.18*w},${h} L0,${0.5*h} Z `
+         + `M${w},0 L${w/2+0.06*w},0 L${w/2+0.18*w},${h} L${w},${0.5*h} Z`,
+};
+
+// Build everything for a given slot/id (single-item preview).
+function buildAvatar(slot,id){
+  const svg=E('svg',{viewBox:`0 0 ${AV.w} ${AV.h}`});
+  const defs=E('defs',{}); svg.appendChild(defs);
+  const g=E('g',{}); svg.appendChild(g);
+  const it=(s)=> s===slot ? id : null;
+
+  background(g,defs,it('fond'));
+  auraGlow(g,defs);
+  backAccessory(g,defs,it('dos'));
+  bodyBase(g,defs);
+  clothing(g,defs,it('haut'));
+  neckwear(g,defs,it('cou'));
+  hair(g,defs,it('cheveux'));
+  face(g,defs);
+  glasses(g,defs,it('lunettes'));
+  headgear(g,defs,it('tete'));
+  heldItem(g,defs,it('main'));
+  frameOverlay(g,defs,it('cadre'));
+  return svg;
+}
+
+// ----- base body + face -----
+function bodyBase(g,defs){
+  const stroke=T.faint;
+  shape(g,(w,h)=>unevenRect(w,h,26,26,12,12),AV.cx,AV.torsoCY,66,74,{fill:T.surface2,stroke,sw:1});
+  circ(g,AV.hcx,AV.hcy,AV.hd,{fill:T.surface2,stroke,sw:1});
+}
+function auraGlow(g,defs){
+  circ(g,AV.hcx,AV.hcy,64,{fill:ACC,opacity:0.166,filter:blurF(defs,10)});
+}
+function face(g,defs){
+  // focused eyes (capsule 4x7) + smile
+  capsule(g,AV.eyeLX,AV.eyeY,4,7,{fill:T.text});
+  capsule(g,AV.eyeRX,AV.eyeY,4,7,{fill:T.text});
+  shape(g,S.smile,AV.cx,AV.mouthY-1,16,7,{stroke:T.text,sw:2});
+}
+
+// ----- FOND -----
+function background(g,defs,id){
+  switch(id){
+    case 'fond.uni': rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:T.surface}); break;
+    case 'fond.degrade':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:lin(defs,[[0,'#243b55'],[1,'#141e30']],0,0,0,1)}); break;
+    case 'fond.grille':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:'#121212'});
+      gridLines(g,16,rgba(ACC,0.25),1); break;
+    case 'fond.damier':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:'#e8e8e8'}); checker(g,20,'#1a1a1a'); break;
+    case 'fond.etoiles':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:lin(defs,[[0,'#0b1026'],[1,'#05060f']],0,0,0,1)});
+      for(let i=0;i<22;i++) circ(g,(i*37)%160,(i*53)%166,i%3===0?2.5:1.5,{fill:rgba('#ffffff',0.8)});
+      break;
+    case 'fond.neon':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:'#0a0a14'});
+      { const cols=[T.epic,'#38d6ff',T.bad];
+        for(let i=0;i<6;i++) rect(g,14+i*27,AV.h/2,3,AV.h,{fill:cols[i%3],opacity:0.7,filter:glow(defs,cols[i%3],3)}); }
+      break;
+    case 'fond.crt':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:'#0d0d0d'});
+      scanlines(g,4,rgba('#ffffff',0.05));
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:radU(defs,[[0,'#000000',0],[1,'#000000',0.6]],80,83,115)});
+      break;
+    case 'fond.synthwave':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:lin(defs,[[0,'#1a0f2e'],[1,'#0d0d12']],0,0,0,1)});
+      synthGrid(g,rgba(T.epic,0.45)); break;
+    case 'fond.aurore':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:lin(defs,[[0,'#05060f'],[1,'#0b1026']],0,0,0,1)});
+      apath(g,S.aurora?S.aurora(160,166):auroraPath(),{fill:lin(defs,[[0,rgba(T.green,0.45)],[0.5,rgba('#38d6ff',0.3)],[1,'rgba(0,0,0,0)']],0,0,0,1),filter:blurF(defs,3)});
+      for(let i=0;i<14;i++) circ(g,(i*41)%160,(i*29)%70,1.5,{fill:rgba('#ffffff',0.7)});
+      break;
+    case 'fond.lave':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:'#1a0500'});
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:radU(defs,[[0,rgba('#ff3b00',0.6)],[1,'rgba(0,0,0,0)']],80,166,110)});
+      for(let i=0;i<5;i++) rect(g,20+i*30,AV.h-(20+i*6),2,20+i*8,{fill:'#ff6a00',filter:glow(defs,'#ff3b00',2)});
+      break;
+    case 'fond.galaxie':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:'#05030d'});
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:radU(defs,[[0,rgba(T.epic,0.7)],[0.5,rgba('#38d6ff',0.25)],[1,'rgba(0,0,0,0)']],80,83,90)});
+      apath(g,spiralPath(),{stroke:rgba('#ffffff',0.35),sw:1.2}); break;
+    case 'fond.trounoir':
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:'#000000'});
+      circ(g,AV.hcx,AV.hcy,70,{stroke:rgba(T.gold,0.9),sw:6,filter:blurF(defs,1.5)});
+      circ(g,AV.hcx,AV.hcy,56,{fill:'#000000'});
+      rect(g,AV.cx,AV.h/2,AV.w,AV.h,{fill:radU(defs,[[0,'rgba(0,0,0,0)'],[1,'#000000']],80,83,110)}); break;
+  }
+}
+function gridLines(g,step,color,sw){ let d='';
+  for(let x=0;x<=160;x+=step) d+=`M${x},0 L${x},166 `;
+  for(let y=0;y<=166;y+=step) d+=`M0,${y} L160,${y} `;
+  apath(g,d,{stroke:color,sw}); }
+function checker(g,step,color){ let d='';
+  for(let y=0,row=0;y<166;y+=step,row++) for(let x=0,col=0;x<160;x+=step,col++)
+    if((row+col)%2===0) d+=`M${x},${y} h${step} v${step} h${-step} Z `;
+  apath(g,d,{fill:color}); }
+function scanlines(g,step,color){ let d='';
+  for(let y=0;y<166;y+=step) d+=`M0,${y} L160,${y} `; apath(g,d,{stroke:color,sw:1}); }
+function synthGrid(g,color){ const horizon=83+12; let d='';
+  for(let y=horizon,gap=6;y<166;gap+=3,y+=gap) d+=`M0,${y} L160,${y} `;
+  for(let x=0;x<=160;x+=20) d+=`M${x},166 L80,${horizon} `;
+  apath(g,d,{stroke:color,sw:1}); }
+function auroraPath(){ const top=166*0.15;
+  return `M0,${top+20} C${0.33*160},${top-12} ${0.66*160},${top+50} 160,${top+24}`
+    +` L160,${top+60} C${0.66*160},${top+86} ${0.33*160},${top+24} 0,${top+56} Z`; }
+function spiralPath(){ const cx=80,cy=83; let d='';
+  for(let arm=0;arm<2;arm++){ let first=true;
+    for(let a=arm*Math.PI;a<Math.PI*4;a+=0.25){ const r=a*4;
+      const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r; d+=(first?'M':' L')+`${x},${y}`; first=false; } }
+  return d; }
+
+// ----- HAUT -----
+function clothing(g,defs,id){
+  if(!id) return;
+  const cx=AV.cx, cy=AV.torsoCY+1, gen=(w,h)=>unevenRect(w,h,24,24,12,12);
+  const clipId='c'+(UID++);
+  const makeClip=()=>{ const cp=E('clipPath',{id:clipId});
+    cp.appendChild(E('path',{d:gen(62,70),transform:`translate(${cx-31} ${cy-35})`})); defs.appendChild(cp);
+    return `url(#${clipId})`; };
+  const body=(fill)=>shape(g,gen,cx,cy,62,70,{fill});
+  switch(id){
+    case 'haut.tshirt': body('#e8e8e8'); break;
+    case 'haut.marin': { body('#f0f0f0'); const cl=makeClip();
+      for(let i=0;i<5;i++) rect(g,cx,86+i*11,56,4,{fill:'#1f3a8a',clip:cl}); } break;
+    case 'haut.hawaii': { body('#0f9b8e'); const cl=makeClip();
+      for(let i=0;i<6;i++){ const fx=cx-18+(i%3)*18, fy=100+Math.floor(i/3)*26;
+        ell(g,fx+6,fy+4,12,6,{fill:'#0c7d6f',rot:-30,clip:cl});
+        circ(g,fx,fy,9,{fill:'#ff9f43',clip:cl}); circ(g,fx,fy,3.5,{fill:'#ffd23f',clip:cl}); }
+      for(let i=0;i<4;i++) circ(g,cx,92+i*13,3,{fill:rgba('#ffffff',0.85),clip:cl});
+      shape(g,S.campCollar,cx,82,38,14,{fill:'#0c7d6f',clip:cl}); } break;
+    case 'haut.pull': body(T.cloth1); rect(g,cx,80,18,2,{fill:rgba(T.muted,0.6)}); break;
+    case 'haut.veste': body(T.cloth2);
+      rect(g,cx,112,2,56,{fill:rgba(T.muted,0.7)});
+      rect(g,70,82,16,2,{fill:T.faint,rot:28}); rect(g,90,82,16,2,{fill:T.faint,rot:-28}); break;
+    case 'haut.costume': { body('#232a36'); const cl=makeClip();
+      shape(g,S.vneck,cx,92,22,30,{fill:'#f2f3f5',clip:cl});
+      shape(g,S.lapel,cx,92,42,34,{fill:'#2c3543',clip:cl});
+      shape(g,S.lapel,cx,92,42,34,{stroke:rgba('#000000',0.3),sw:1,clip:cl});
+      shape(g,S.tie,cx,104,9,28,{fill:ACC,clip:cl});
+      circ(g,cx,128,3,{fill:rgba('#000000',0.4),clip:cl}); circ(g,cx,138,3,{fill:rgba('#000000',0.4),clip:cl}); } break;
+    case 'haut.bomber': { body('#3a2f4a'); const cl=makeClip();
+      rect(g,cx,78,62,8,{fill:ACC,clip:cl});
+      for(let i=0;i<10;i++) rect(g,52+i*6,78,1,8,{fill:rgba('#000000',0.15),clip:cl});
+      rect(g,cx,141,62,7,{fill:ACC,clip:cl});
+      for(let i=0;i<10;i++) rect(g,52+i*6,141,1,7,{fill:rgba('#000000',0.15),clip:cl});
+      rect(g,cx,111,2,58,{fill:'#c8ccd0',clip:cl});
+      rect(g,cx,90,4,6,{rx:1,fill:'#e8ecf0',clip:cl});
+      rect(g,63,100,11,7,{rx:2,fill:rgba(ACC,0.9),clip:cl}); } break;
+    case 'haut.smoking': { body('#0e0e13'); const cl=makeClip();
+      shape(g,S.vneck,cx,94,20,34,{fill:'#ffffff',clip:cl});
+      shape(g,S.lapel,cx,94,44,36,{fill:lin(defs,[[0,'#2b2b34'],[1,'#111116']],0,0,0,1),clip:cl});
+      for(let i=0;i<3;i++) circ(g,cx,100+i*8,2.5,{fill:'#151515',clip:cl});
+      rect(g,cx,83,24,8,{rx:2,fill:'#ffffff',clip:cl});
+      shape(g,S.bowTie,cx,83,20,11,{fill:'#141414',clip:cl});
+      rect(g,cx,83,4,6,{rx:1,fill:'#2c2c2c',clip:cl}); } break;
+    case 'haut.armure': { body(lin(defs,[[0,'#c4ccd4'],[1,'#828b95']],0,0,0,1)); const cl=makeClip();
+      ell(g,52,84,26,22,{fill:lin(defs,[[0,'#d6dce2'],[1,'#79828c']],0,0,0,1),clip:cl});
+      ell(g,108,84,26,22,{fill:lin(defs,[[0,'#d6dce2'],[1,'#79828c']],0,0,0,1),clip:cl});
+      rect(g,72,98,2,16,{fill:'#5a626b',rot:35,clip:cl}); rect(g,88,98,2,16,{fill:'#5a626b',rot:-35,clip:cl});
+      rect(g,cx,118,2,40,{fill:rgba('#ffffff',0.45),clip:cl});
+      shape(g,S.star,cx,106,14,14,{fill:T.gold});
+      rect(g,cx,134,62,6,{fill:'#6c727b',clip:cl});
+      circ(g,60,128,3,{fill:'#5a626b',clip:cl}); circ(g,100,128,3,{fill:'#5a626b',clip:cl}); } break;
+    case 'haut.hoodie': { body('#5a5a5a'); const cl=makeClip();
+      rect(g,cx,80,46,18,{rx:10,fill:'#4a4a4a',clip:cl});
+      rect(g,cx,82,30,12,{rx:9,fill:'#3d3d3d',clip:cl});
+      rect(g,cx-5,93,2,16,{fill:'#d8d8d8',clip:cl}); rect(g,cx+5,93,2,16,{fill:'#d8d8d8',clip:cl});
+      circ(g,cx-5,101,4,{fill:'#d8d8d8',clip:cl}); circ(g,cx+5,101,4,{fill:'#d8d8d8',clip:cl});
+      rect(g,cx,124,36,18,{rx:4,fill:'#525252',clip:cl});
+      rect(g,cx,124,36,18,{rx:4,stroke:rgba('#000000',0.3),sw:1.5,clip:cl}); } break;
+    case 'haut.maillot': { body('#ffffff'); const cl=makeClip();
+      for(let i=0;i<3;i++) rect(g,cx-18+i*18,cy,10,70,{fill:'#c8102e',clip:cl});
+      rect(g,cx,78,62,5,{fill:'#1565c0',clip:cl}); } break;
+    case 'haut.kimono': { body('#ededed'); const cl=makeClip();
+      shape(g,S.kimonoCollar,cx,97,46,42,{fill:'#dcdcdc',clip:cl});
+      shape(g,S.kimonoCollar,cx,97,46,42,{stroke:rgba('#000000',0.18),sw:1,clip:cl});
+      rect(g,cx,122,62,13,{fill:'#111318',clip:cl});
+      rect(g,cx,117,62,1,{fill:rgba('#ffffff',0.12),clip:cl}); rect(g,cx,127,62,1,{fill:rgba('#ffffff',0.12),clip:cl});
+      rect(g,cx,122,14,11,{rx:2,fill:'#1b1e26',clip:cl}); } break;
+    case 'haut.combinaison': { body('#3f4b5c'); const cl=makeClip();
+      shape(g,S.campCollar,cx,84,40,16,{fill:'#4a586b',clip:cl});
+      rect(g,cx,108,2,42,{fill:'#c9cdd3',clip:cl});
+      rect(g,cx,92,4,6,{rx:1,fill:'#e6e9ec',clip:cl});
+      rect(g,66,100,14,12,{rx:2,stroke:rgba('#000000',0.3),sw:1.2,clip:cl});
+      rect(g,94,100,14,12,{rx:2,stroke:rgba('#000000',0.3),sw:1.2,clip:cl});
+      rect(g,cx,124,62,8,{fill:'#2c3542',clip:cl});
+      rect(g,cx,124,8,8,{rx:1,fill:ACC,clip:cl}); } break;
+  }
+}
+
+// ----- CHEVEUX -----
+function hair(g,defs,id){
+  if(!id) return; const cx=AV.cx; const H=T.hair;
+  const rainbow=()=>lin(defs,[[0,'red'],[0.2,'orange'],[0.4,'yellow'],[0.6,'green'],[0.8,'blue'],[1,'purple']],0,0,0,1);
+  switch(id){
+    case 'cheveux.couettes': capsule(g,cx,24,46,18,{fill:H});
+      circ(g,cx-26,34,16,{fill:H}); circ(g,cx+26,34,16,{fill:H}); break;
+    case 'cheveux.carre': capsule(g,cx,22,50,20,{fill:H});
+      rect(g,cx-22,38,8,30,{rx:4,fill:H}); rect(g,cx+22,38,8,30,{rx:4,fill:H}); break;
+    case 'cheveux.banane': shape(g,S.banana,cx,20,48,26,{fill:H,stroke:T.faint,sw:1}); break;
+    case 'cheveux.afro': ell(g,cx,26,54,34,{fill:H,stroke:T.faint,sw:1}); break;
+    case 'cheveux.fleurs': { capsule(g,cx,24,46,18,{fill:H});
+      const cols=['#ff7eb6','#ffd23f',T.epic,'#ff7a59','#ffffff'];
+      for(let i=0;i<5;i++){ const fx=cx+(i-2)*12, fy=20+Math.abs(i-2)*3;
+        circ(g,fx,fy,11,{fill:cols[i]}); circ(g,fx,fy,4,{fill:'#ffd23f'}); } } break;
+    case 'cheveux.tresses': { capsule(g,cx,24,46,18,{fill:H});
+      shape(g,S.braid,cx-24,52,8,40,{stroke:rainbow(),sw:8,cap:'round'});
+      shape(g,S.braid,cx+24,52,8,40,{stroke:rainbow(),sw:8,cap:'round'}); } break;
+    case 'cheveux.mulet': ell(g,cx,22,50,22,{fill:H}); shape(g,S.mullet,cx,50,54,40,{fill:H}); break;
+    case 'cheveux.mohawk': shape(g,S.mohawk,cx,20,18,30,{fill:ACC,filter:glow(defs,ACC,3)}); break;
+    case 'cheveux.dragon': ell(g,cx,24,48,20,{fill:H}); circ(g,cx,11,22,{fill:H,stroke:T.faint,sw:1});
+      capsule(g,cx,11,3,22,{fill:T.gold,rot:28}); capsule(g,cx,11,3,22,{fill:T.gold,rot:-28}); break;
+    case 'cheveux.flammes':
+      shape(g,S.flame,cx,18,50,40,{fill:lin(defs,[[0,'#ffe600'],[0.5,'#ffb000'],[1,'#ff3b00']],0,0,0,1),filter:glow(defs,'#ff6a00',5)}); break;
+    case 'cheveux.galaxie': { ell(g,cx,24,54,32,{fill:lin(defs,[[0,T.epic],[0.5,'#38d6ff'],[1,'#1a0f2e']],0,0,1,1),filter:glow(defs,T.epic,5)});
+      for(let i=0;i<7;i++) circ(g,cx-24+i*8,18+((i*7)%14),i%2===0?2.5:1.5,{fill:rgba('#ffffff',0.9)}); } break;
+    case 'cheveux.hologramme':
+      ell(g,cx,24,54,32,{fill:lin(defs,[[0,rgba(T.epic,0.55)],[1,rgba('#38d6ff',0.55)]],0,0,1,0),stroke:rgba('#38d6ff',0.8),sw:1,filter:glow(defs,'#38d6ff',6)}); break;
+  }
+}
+
+// ----- LUNETTES -----
+function glasses(g,defs,id){
+  if(!id) return; const lx=AV.eyeLX, rx=AV.eyeRX, y=AV.eyeY, cx=AV.cx;
+  switch(id){
+    case 'lunettes.carrees':
+      rect(g,lx,y,13,11,{rx:2,stroke:T.text,sw:1.5}); rect(g,rx,y,13,11,{rx:2,stroke:T.text,sw:1.5});
+      rect(g,cx,y,6,1.5,{fill:T.text}); break;
+    case 'lunettes.rondes':
+      circ(g,lx,y,13,{stroke:T.text,sw:1.5}); circ(g,rx,y,13,{stroke:T.text,sw:1.5});
+      rect(g,cx,y,6,1.5,{fill:T.text}); break;
+    case 'lunettes.soleil':
+      rect(g,lx,y,14,11,{rx:3,fill:'#0c0c0c'}); rect(g,rx,y,14,11,{rx:3,fill:'#0c0c0c'});
+      rect(g,cx,y,6,2,{fill:'#0c0c0c'}); break;
+    case 'lunettes.coeur':
+      shape(g,S.heart,lx,y,14,12,{fill:'#ff4d6d'}); shape(g,S.heart,rx,y,14,12,{fill:'#ff4d6d'});
+      rect(g,cx,y-1,6,1.5,{fill:'#ff4d6d'}); break;
+    case 'lunettes.neon': { const f=glow(defs,ACC,3);
+      circ(g,lx,y,13,{stroke:ACC,sw:1.5,filter:f}); circ(g,rx,y,13,{stroke:ACC,sw:1.5,filter:f});
+      rect(g,cx,y,6,1.5,{fill:ACC,filter:f}); } break;
+    case 'lunettes.pixel':
+      rect(g,lx,y,16,9,{fill:'#000000'}); rect(g,rx,y,16,9,{fill:'#000000'}); rect(g,cx,y,6,4,{fill:'#000000'});
+      rect(g,lx-3,y-1,4,3,{fill:rgba('#ffffff',0.85)}); rect(g,rx-3,y-1,4,3,{fill:rgba('#ffffff',0.85)}); break;
+    case 'lunettes.aviateur':
+      shape(g,S.teardrop,lx,y+1,14,12,{fill:rgba('#9fd9ff',0.85),stroke:T.gold,sw:1.2});
+      shape(g,S.teardrop,rx,y+1,14,12,{fill:rgba('#9fd9ff',0.85),stroke:T.gold,sw:1.2});
+      rect(g,cx,y,6,1.5,{fill:T.gold}); break;
+    case 'lunettes.monocle':
+      circ(g,rx,y,15,{stroke:T.gold,sw:1.8}); circ(g,rx,y,13,{fill:rgba('#ffffff',0.12)});
+      apath(g,`M${rx},${y+8} L${rx-4},70`,{stroke:T.gold,sw:1}); break;
+    case 'lunettes.masque':
+      rect(g,cx,y,40,13,{rx:3,fill:'#0c0c0c',stroke:ACC,sw:1});
+      rect(g,cx,y,32,1.5,{fill:rgba(ACC,0.7)}); break;
+    case 'lunettes.cyber':
+      shape(g,S.visor,cx,y,44,12,{fill:lin(defs,[[0,T.epic],[1,'#38d6ff']],0,0,1,0),stroke:rgba(T.text,0.6),sw:1,filter:glow(defs,T.epic,4)}); break;
+    case 'lunettes.diamant': { const f=glow(defs,'#9fe8ff',2);
+      circ(g,lx,y,13,{stroke:'#dff6ff',sw:1.5}); circ(g,rx,y,13,{stroke:'#dff6ff',sw:1.5});
+      rect(g,cx,y,6,1.5,{fill:'#dff6ff'});
+      shape(g,S.diamond,lx-7,y-5,6,6,{fill:'#9fe8ff',filter:f}); shape(g,S.diamond,rx+7,y-5,6,6,{fill:'#9fe8ff',filter:f}); } break;
+    case 'lunettes.lasers':
+      rect(g,cx,y,40,10,{fill:'#111111'});
+      circ(g,lx,y,8,{fill:T.bad}); circ(g,rx,y,8,{fill:T.bad});
+      rect(g,lx-24,y,70,2,{fill:T.bad,filter:glow(defs,T.bad,4)});
+      rect(g,rx+24,y,70,2,{fill:T.bad,filter:glow(defs,T.bad,4)}); break;
+  }
+}
+
+// ----- TETE -----
+function headgear(g,defs,id){
+  if(!id) return; const cx=AV.cx;
+  switch(id){
+    case 'tete.bob': ell(g,cx,32,50,10,{fill:T.hat}); rect(g,cx,24,40,22,{rx:12,fill:T.hat});
+      rect(g,cx,30,40,3,{fill:T.faint}); break;
+    case 'tete.casquette': shape(g,S.cap,cx,28,46,22,{fill:T.hat});
+      ell(g,cx+16,33,26,7,{fill:'#1c1c1c'}); break;
+    case 'tete.serretete': capsule(g,cx,28,46,7,{fill:'#e23b8a'});
+      circ(g,cx+20,24,11,{fill:'#e23b8a'}); circ(g,cx+20,24,4,{fill:'#ff7eb6'}); break;
+    case 'tete.bonnet': rect(g,cx,25,46,26,{rx:10,fill:T.hat});
+      rect(g,cx,35,46,5,{fill:T.faint}); circ(g,cx,10,9,{fill:T.hat}); break;
+    case 'tete.beret': ell(g,cx,24,46,22,{fill:'#1f1f1f',rot:-10}); circ(g,cx,13,6,{fill:T.hat}); break;
+    case 'tete.melon': ell(g,cx,31,48,9,{fill:'#1f1f1f'}); capsule(g,cx,20,34,26,{fill:'#1f1f1f'});
+      rect(g,cx,29,34,4,{fill:'#3a3a3a'}); break;
+    case 'tete.hautdeforme': ell(g,cx,27,50,9,{fill:T.cloth3}); rect(g,cx,14,32,26,{fill:T.cloth3});
+      rect(g,cx,22,32,4,{fill:rgba(T.bad,0.7)}); break;
+    case 'tete.cowboy': ell(g,cx,32,60,14,{fill:'#8a5a2b'}); capsule(g,cx,18,30,26,{fill:'#8a5a2b'});
+      rect(g,cx,28,30,4,{fill:'#3a2410'}); break;
+    case 'tete.casque': shape(g,S.arcBand,cx,30,56,40,{stroke:T.cloth1,sw:5});
+      rect(g,cx-27,40,11,18,{rx:4,fill:ACC}); rect(g,cx+27,40,11,18,{rx:4,fill:ACC}); break;
+    case 'tete.toque': capsule(g,cx,30,38,14,{fill:'#f4f4f4'});
+      circ(g,cx-9,17,18,{fill:'#f4f4f4'}); circ(g,cx+8,15,22,{fill:'#f4f4f4'}); circ(g,cx,12,16,{fill:'#ffffff'}); break;
+    case 'tete.viking': capsule(g,cx,26,44,30,{fill:lin(defs,[[0,'#c8ccd0'],[1,'#7c858f']],0,0,0,1)});
+      rect(g,cx,30,44,4,{fill:'#5a626b'});
+      shape(g,S.horn,cx-26,20,18,24,{fill:'#f0e6d2'}); shape(g,S.horn,cx+26,20,18,24,{fill:'#f0e6d2',sx:-1}); break;
+    case 'tete.aureole': ell(g,cx,11,40,12,{stroke:T.gold,sw:3});
+      ell(g,cx,11,40,12,{stroke:rgba(T.gold,0.6),sw:6,filter:blurF(defs,2)}); break;
+    case 'tete.couronne': shape(g,S.crown,cx,23,40,20,{fill:T.gold,filter:glow(defs,T.gold,4)}); break;
+  }
+}
+
+// ----- COU -----
+function neckwear(g,defs,id){
+  if(!id) return; const cx=AV.cx;
+  switch(id){
+    case 'cou.foulard': capsule(g,cx,72,30,9,{fill:'#e23b3b'});
+      shape(g,S.triDown,cx,81,16,14,{fill:'#e23b3b'}); break;
+    case 'cou.cravate': rect(g,cx,73,8,6,{fill:'#b8252e'}); shape(g,S.tie,cx,94,11,28,{fill:'#b8252e'}); break;
+    case 'cou.echarpe': capsule(g,cx,74,42,14,{fill:'#2e7d5b'});
+      rect(g,cx-9,94,12,30,{rx:3,fill:'#2e7d5b'});
+      for(let i=0;i<3;i++) rect(g,cx-9,86+i*7,12,2,{fill:rgba('#ffffff',0.5)}); break;
+    case 'cou.chaine': shape(g,S.chain,cx,80,40,26,{stroke:T.gold,sw:2.5,filter:glow(defs,T.gold,2)}); break;
+    case 'cou.medaille': shape(g,S.chain,cx,78,40,24,{stroke:T.gold,sw:2});
+      circ(g,cx,92,16,{fill:T.gold,stroke:'#a87800',sw:1}); shape(g,S.star,cx,92,9,9,{fill:'#a87800'}); break;
+    case 'cou.diamants': { shape(g,S.chain,cx,80,42,26,{stroke:'#dff6ff',sw:2});
+      const f=glow(defs,'#9fe8ff',3);
+      for(let i=0;i<5;i++) shape(g,S.diamond,cx+(i-2)*9,84+Math.abs(i-2)*3,7,7,{fill:'#9fe8ff',filter:f}); } break;
+    case 'cou.cosmique': shape(g,S.chain,cx,80,40,26,{stroke:T.epic,sw:2});
+      circ(g,cx,92,16,{fill:rad(defs,[[0,'#ffffff'],[0.5,T.epic],[1,'#38d6ff']]),filter:glow(defs,T.epic,5)}); break;
+  }
+}
+
+// ----- DOS -----
+function backAccessory(g,defs,id){
+  if(!id) return; const cx=AV.cx;
+  switch(id){
+    case 'dos.sac': rect(g,cx,114,82,76,{rx:12,fill:'#3a6ea5'});
+      rect(g,cx-36,118,10,30,{rx:4,fill:'#2c5580'}); rect(g,cx+36,118,10,30,{rx:4,fill:'#2c5580'}); break;
+    case 'dos.cape': shape(g,S.cape,cx,112,92,86,{fill:lin(defs,[[0,T.bad],[1,'#7a0d1a']],0,0,0,1),stroke:rgba('#000000',0.3),sw:1}); break;
+    case 'dos.katana': capsule(g,cx,104,6,84,{fill:'#1a1a1a',rot:34});
+      capsule(g,cx+24,76,6,18,{fill:'#b8252e',rot:34}); break;
+    case 'dos.ailes': shape(g,S.wing,cx-34,104,46,72,{fill:'#f4f4f4',stroke:'#d8d8d8',sw:1});
+      shape(g,S.wing,cx+34,104,46,72,{fill:'#f4f4f4',stroke:'#d8d8d8',sw:1,sx:-1}); break;
+    case 'dos.jetpack': { const grad=lin(defs,[[0,'#c8ccd0'],[1,'#7c858f']],0,0,0,1);
+      capsule(g,cx-30,104,14,44,{fill:grad}); capsule(g,cx+30,104,14,44,{fill:grad});
+      const fl=lin(defs,[[0,'#ffe600'],[1,'#ff3b00']],0,0,0,1);
+      shape(g,S.flame,cx-30,134,14,18,{fill:fl}); shape(g,S.flame,cx+30,134,14,18,{fill:fl}); } break;
+    case 'dos.ailesdemon': { const grad=lin(defs,[[0,'#7a0d1a'],[1,'#2a0309']],0,0,0,1); const f=glow(defs,T.bad,4,0.5);
+      shape(g,S.batwing,cx-36,104,48,72,{fill:grad,filter:f}); shape(g,S.batwing,cx+36,104,48,72,{fill:grad,filter:f,sx:-1}); } break;
+  }
+}
+
+// ----- MAIN -----
+function heldItem(g,defs,id){
+  if(!id) return; const hx=AV.cx+38, hy=122;
+  switch(id){
+    case 'main.cafe': rect(g,hx,hy,16,18,{rx:3,fill:'#f4f4f4',stroke:T.faint,sw:1});
+      circ(g,hx+10,hy,10,{stroke:'#f4f4f4',sw:2.5});
+      rect(g,hx-3,hy-14,2,8,{fill:rgba('#ffffff',0.4)}); rect(g,hx+3,hy-14,2,8,{fill:rgba('#ffffff',0.4)}); break;
+    case 'main.ballon': circ(g,hx,hy,22,{fill:'#ffffff',stroke:T.faint,sw:1});
+      shape(g,S.pent,hx,hy,9,9,{fill:'#000000'}); break;
+    case 'main.manette': rect(g,hx,hy,30,18,{rx:9,fill:'#2c2c2c',stroke:T.faint,sw:1});
+      circ(g,hx+6,hy-1,4,{fill:ACC}); circ(g,hx+10,hy-4,4,{fill:T.bad}); break;
+    case 'main.micro': capsule(g,hx,hy+6,6,22,{fill:'#2c2c2c'});
+      circ(g,hx,hy-8,14,{fill:T.gold,stroke:'#a87800',sw:1}); break;
+    case 'main.baguette': capsule(g,hx,hy,4,30,{fill:'#3a2a1a',rot:20});
+      shape(g,S.star,hx+6,hy-12,14,14,{fill:T.gold,filter:glow(defs,T.gold,4)}); break;
+    case 'main.bouclier': shape(g,S.shield,hx,hy,26,32,{fill:lin(defs,[[0,'#c8ccd0'],[1,'#7c858f']],0,0,0,1),stroke:'#5a626b',sw:1.5});
+      rect(g,hx,hy,4,18,{fill:T.bad}); rect(g,hx,hy-3,14,4,{fill:T.bad}); break;
+    case 'main.epee': shape(g,S.blade,hx,hy-8,8,46,{fill:lin(defs,[[0,'#e8edf2'],[1,'#9aa0a6']],0,0,1,0)});
+      rect(g,hx,hy+13,20,4,{fill:T.gold}); capsule(g,hx,hy+20,5,14,{fill:'#3a2a1a'}); break;
+    case 'main.sabre': capsule(g,hx,hy+16,6,16,{fill:'#9aa0a6'});
+      capsule(g,hx,hy-8,5,46,{fill:ACC,filter:glow(defs,ACC,6)}); capsule(g,hx,hy-8,2,44,{fill:'#ffffff'}); break;
+  }
+}
+// pentagon needs n arg: special-case main.ballon above via S.poly with n; patch generator call.
+
+// ----- CADRE -----
+function frameOverlay(g,defs,id){
+  if(!id) return; const W=AV.w,H=AV.h;
+  const border=(inset,stroke,sw,o={})=>rect(g,W/2,H/2,W-2*inset,H-2*inset,{stroke,sw,...o});
+  switch(id){
+    case 'cadre.bois': border(2,'#7a4a24',4); break;
+    case 'cadre.pixel': border(2,ACC,4,{dash:'6 3'}); break;
+    case 'cadre.argent': border(1,'#c8ccd0',2); border(4,rgba('#8a9098',0.6),1); break;
+    case 'cadre.neon': border(2,ACC,2,{filter:glow(defs,ACC,5)}); break;
+    case 'cadre.vert': border(1,T.green,2); break;
+    case 'cadre.flammes': border(1,lin(defs,[[0,'#ff3b00'],[1,'#ffb000']],0,0,0,1),3,{filter:glow(defs,'#ff6a00',4)}); break;
+    case 'cadre.glace': border(1,lin(defs,[[0,'#9fe8ff'],[1,'#38d6ff']],0,0,0,1),2.5,{filter:glow(defs,'#38d6ff',4)}); break;
+    case 'cadre.lauriers': border(1,T.gold,2);
+      for(let i=0;i<8;i++){ const lx=i<4?42+i*8:W-42-(i-4)*8;
+        ell(g,lx,H-8,9,4,{fill:rgba(T.gold,0.85),rot:i<4?40:-40}); } break;
+    case 'cadre.diamant': { border(1,'#dff6ff',2); const f=glow(defs,'#9fe8ff',3);
+      for(let i=0;i<4;i++) shape(g,S.diamond,i%2===0?6:W-6,i<2?6:H-6,8,8,{fill:'#9fe8ff',filter:f}); } break;
+    case 'cadre.arcenciel': border(1,ang(defs,[[0,'red'],[0.17,'orange'],[0.34,'yellow'],[0.5,'green'],[0.67,'blue'],[0.84,'purple'],[1,'red']]),3,{filter:glow(defs,T.epic,4)}); break;
+    case 'cadre.foudre': border(1,lin(defs,[[0,'#fff27a'],[1,'#38d6ff']],0,0,0,1),3,{filter:glow(defs,'#38d6ff',5)}); break;
+    case 'cadre.or': border(1,T.gold,2); border(4,rgba(T.gold,0.4),1); break;
+  }
+}
+
+// ------------------------------------------------------------------ *
+// Wire the rendered SVGs into the existing tables. We read the item
+// id straight from each row's .item-id cell, so no row markup changes.
+// ------------------------------------------------------------------ *
+document.querySelectorAll('table').forEach(tbl=>{
+  // add the "Aperçu" header
+  const headRow = tbl.querySelector('thead tr');
+  if(headRow){ const th=document.createElement('th'); th.className='thumb-h'; th.textContent='Aperçu'; headRow.insertBefore(th,headRow.firstChild); }
+  tbl.querySelectorAll('tbody tr').forEach(tr=>{
+    const idCell = tr.querySelector('.item-id');
+    if(!idCell) return;
+    const id = idCell.textContent.trim();
+    const slot = id.split('.')[0];
+    const td = document.createElement('td');
+    td.className = 'thumb';
+    td.appendChild(buildAvatar(slot, id));
+    tr.insertBefore(td, tr.firstChild);
+  });
+});
+</script>
+</body>
+</html>

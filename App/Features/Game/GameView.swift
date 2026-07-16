@@ -23,20 +23,22 @@ struct GameView: View {
     @Environment(Router.self) private var router
 
     var body: some View {
-        VStack(spacing: 14) {
-            topRow
-            statusRow
-            timerBar
-            Spacer(minLength: 6)
-            questionCard
-            Spacer(minLength: 6)
-            answersList
-            explanationBanner
-            footer
+        ScrollView {
+            VStack(spacing: 14) {
+                topRow
+                statusRow
+                timerBar
+                questionCard
+                answersList
+                explanationBanner
+                footer
+            }
+            .screenPadding()
+            .padding(.top, 12)
+            .padding(.bottom, 20)
+            .frame(maxWidth: 680)
+            .frame(maxWidth: .infinity)
         }
-        .screenPadding()
-        .padding(.top, 12)
-        .padding(.bottom, 12)
         .screenBackground()
         .onAppear { game.start() }
     }
@@ -87,6 +89,7 @@ struct GameView: View {
             .font(KFont.body(19, weight: .semibold))
             .multilineTextAlignment(.center)
             .foregroundStyle(Theme.text)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 22)
             .padding(.horizontal, 16)
