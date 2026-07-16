@@ -34,7 +34,9 @@ Ordre conseillé. Coche au fur et à mesure.
 
 ## 5. Build & upload
 - [ ] Dans Xcode : sélectionner « Any iOS Device (arm64) »
-- [ ] `Secrets.xcconfig` présent (il l'est) pour que l'app online fonctionne en Release
+- [ ] `App/Secrets.xcconfig` présent (il est versionné) pour que l'app online fonctionne en Release
+- [ ] `MARKETING_VERSION` supérieur à la dernière version approuvée sur l'App Store
+      (sinon : « Invalid Pre-Release Train », le train d'une version publiée est fermé)
 - [ ] Product > Archive
 - [ ] Organizer > Validate App (c'est ici qu'Apple confirme l'icône, le manifest, etc.)
 - [ ] Distribute App > App Store Connect > Upload

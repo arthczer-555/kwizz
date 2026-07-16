@@ -21,6 +21,23 @@ machine de build). En cas de souci : crée un nouveau projet *App* SwiftUI nomm�
 dedans (cible l'app), règle `IPHONEOS_DEPLOYMENT_TARGET = 17.0`. Tout le code est
 prêt, c'est juste l'enveloppe projet.
 
+## Config Supabase (`App/Secrets.xcconfig`)
+
+Les 4 configurations de build ont `App/Secrets.xcconfig` en base configuration : il
+définit `SUPABASE_HOST` et `SUPABASE_ANON_KEY`, que `Kwizz-Info.plist` expose à l'app
+via `$(...)`. Sans ce fichier, le build échoue sur « Unable to open base configuration
+reference file » (c'est ce qui cassait Xcode Cloud quand il était gitignoré).
+
+Il est donc **versionné** : le repo est privé, et la clé `anon` est publique par
+design (embarquée dans le binaire, extractible d'un `.ipa`). La base est protégée
+par les **RLS policies**, pas par le secret de cette clé. Rien à configurer, ni en
+local ni sur Xcode Cloud, le clone suffit.
+
+> ⚠️ La clé **`service_role`** ne doit jamais entrer dans l'app ni dans ce fichier :
+> elle contourne les RLS. Elle reste dans `.env` (gitignoré), côté serveur.
+> `SUPABASE_HOST` est le domaine seul, sans `https://` (en xcconfig, `//` démarre un
+> commentaire).
+
 ## Architecture
 
 Séparation nette entre **logique pure** et **UI** :

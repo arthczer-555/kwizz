@@ -272,13 +272,13 @@ App :
   `Router` (`activeDuel`, `createDuel`/`joinDuel`, nettoyage `goHome`),
   `Route.duelEntry`, `ModeSelectView`, `Theme.Accent.hex`.
   `GameController` est resté inchangé (le duel n'utilise plus le flux solo).
-- Secrets : `.env` (référence), `Config/Secrets.xcconfig` (lu par l'app), `.gitignore`.
+- Secrets : `.env` (référence, service_role), `App/Secrets.xcconfig` (lu par l'app, versionné).
 
 Tant que `Secrets.xcconfig` n'est pas branché dans l'Info.plist, ou que le package
 Supabase n'est pas ajouté, l'app tourne automatiquement sur le `MockDuelTransport`
 (adversaires simulés), donc tout le flux est testable immédiatement.
 
-## 16. Étapes Xcode (à faire une fois)
+## 16. Étapes Xcode (à faire une fois) - ✅ faites
 
 1. **Ouvrir le projet** dans Xcode 16+. Les nouveaux fichiers sous `App/` et
    `Sources/KwizzCore/` sont inclus automatiquement (synchronized groups), rien à
@@ -286,9 +286,9 @@ Supabase n'est pas ajouté, l'app tourne automatiquement sur le `MockDuelTranspo
 2. **Ajouter le package Supabase** : File > Add Package Dependencies >
    `https://github.com/supabase/supabase-swift` > Add Package > cocher le produit
    **Supabase** pour la cible Kwizz. (Cela modifie le `project.pbxproj`, normal.)
-3. **Brancher le `.xcconfig`** : glisser `Config/Secrets.xcconfig` dans le projet
-   (sans cible de compilation), puis projet Kwizz > onglet **Info** >
-   **Configurations** : affecter `Secrets.xcconfig` à **Debug** et **Release**.
+3. **Brancher le `.xcconfig`** : le fichier vit en `App/Secrets.xcconfig` (sans cible
+   de compilation) et est affecté aux 4 configurations, projet Kwizz > onglet **Info**
+   > **Configurations**.
 4. **Exposer les clés dans l'Info.plist** : dans les "Custom iOS Target Properties"
    (ou l'Info.plist), ajouter deux String :
    - `SUPABASE_URL` = `$(SUPABASE_HOST)`

@@ -1,6 +1,10 @@
-# Secrets (duel en ligne / Supabase) - ne jamais committer
+# Secrets - ne jamais committer : .env contient la clé service_role.
 .env
-Secrets.xcconfig
+
+# App/Secrets.xcconfig est versionné volontairement (repo privé + clé anon publique
+# par design, voir l'en-tête du fichier). Config/Secrets.xcconfig est un doublon
+# que le projet n'utilise pas.
+Config/Secrets.xcconfig
 
 # macOS
 .DS_Store
