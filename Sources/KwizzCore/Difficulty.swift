@@ -18,12 +18,14 @@ public enum Difficulty: String, CaseIterable, Codable, Sendable, Identifiable {
         }
     }
 
-    /// Multiplier applied to coin gains.
+    /// Multiplier applied to coin gains. Doubled vs the original 1 / 1.5 / 2.5 so
+    /// every mode pays roughly twice as much (the ratios between difficulties are
+    /// preserved).
     public var coinMultiplier: Double {
         switch self {
-        case .facile: 1.0
-        case .normal: 1.5
-        case .difficile: 2.5
+        case .facile: 2.0
+        case .normal: 3.0
+        case .difficile: 5.0
         }
     }
 
@@ -36,12 +38,12 @@ public enum Difficulty: String, CaseIterable, Codable, Sendable, Identifiable {
         }
     }
 
-    /// Short "x1 / x1.5 / x2.5" label used on the difficulty screen.
+    /// Short "x2 / x3 / x5" label used on the difficulty screen.
     public var gainLabel: String {
         switch self {
-        case .facile: "x1"
-        case .normal: "x1.5"
-        case .difficile: "x2.5"
+        case .facile: "x2"
+        case .normal: "x3"
+        case .difficile: "x5"
         }
     }
 }

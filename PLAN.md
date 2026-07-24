@@ -223,27 +223,27 @@ Montée rapide au tout début (on accroche le joueur), puis **de plus en plus du
 
 | Niveau | XP pour le niveau suivant | Récompense de passage |
 |:------:|:-------------------------:|-----------------------|
-| 1 → 2 | 150 | 20 🪙 |
-| 2 → 3 | 300 | 30 🪙 |
-| 3 → 4 | 500 | 40 🪙 |
-| 4 → 5 | 800 | 60 🪙 + 1 item |
-| 5 → 6 | 1 200 | 80 🪙 |
-| 6 → 7 | 1 700 | 100 🪙 |
-| 7 → 8 | 2 400 | 120 🪙 |
-| 8 → 9 | 3 300 | 150 🪙 |
-| 9 → 10 | 4 500 | 200 🪙 + item rare |
-| 10 → 11 | 6 000 | 250 🪙 |
-| 11 → 12 | 8 000 | 300 🪙 |
-| 12 → 13 | 10 500 | 400 🪙 |
-| 13 → 14 | 13 500 | 500 🪙 |
-| 14 → 15 | 17 000 | 600 🪙 + item épique |
-| 15 → 16 | 21 000 | 800 🪙 |
-| 16 → 17 | 26 000 | 1 000 🪙 |
-| 17 → 18 | 32 000 | 1 200 🪙 |
-| 18 → 19 | 40 000 | 1 500 🪙 |
-| 19 → 20 | 50 000 | item légendaire + titre doré |
+| 1 → 2 | 30 | 20 🪙 |
+| 2 → 3 | 50 | 30 🪙 |
+| 3 → 4 | 70 | 40 🪙 |
+| 4 → 5 | 100 | 60 🪙 + 1 item |
+| 5 → 6 | 130 | 80 🪙 |
+| 6 → 7 | 160 | 100 🪙 |
+| 7 → 8 | 190 | 120 🪙 |
+| 8 → 9 | 220 | 150 🪙 |
+| 9 → 10 | 250 | 200 🪙 + item rare |
+| 10 → 11 | 350 | 250 🪙 |
+| 11 → 12 | 500 | 300 🪙 |
+| 12 → 13 | 750 | 400 🪙 |
+| 13 → 14 | 1 100 | 500 🪙 |
+| 14 → 15 | 1 600 | 600 🪙 + item épique |
+| 15 → 16 | 2 400 | 800 🪙 |
+| 16 → 17 | 3 600 | 1 000 🪙 |
+| 17 → 18 | 5 500 | 1 200 🪙 |
+| 18 → 19 | 8 500 | 1 500 🪙 |
+| 19 → 20 | 13 000 | item légendaire + titre doré |
 
-Total pour atteindre le niveau 20 : environ **239 000 XP** (soit ~4× la version précédente). À ~60 XP/min en Normal, cela représente plusieurs dizaines d'heures de jeu : le niveau 20 (« Émilien ») doit rester un accomplissement rare. Chiffres ajustables selon le rythme réel observé.
+Courbe **front-loaded** : le niveau 10 est atteint dès **1 200 XP** (les 10 premiers niveaux s'enchaînent vite pour accrocher le joueur), puis chaque palier coûte nettement plus, jusqu'à un total d'environ **38 500 XP** pour le niveau 20 (« Émilien »), qui reste un accomplissement rare. Chiffres ajustables selon le rythme réel observé.
 
 ---
 
@@ -648,10 +648,10 @@ Ambiance : inspiré des plateaux de jeu télé (Questions pour un champion, Burg
 - ✅ **Monnaie** : pièces seules pour le MVP (gemmes en phase 2), économie volontairement **serrée**.
 - ✅ **Modes MVP** : les 7 modes (Classique 15Q, Contre-la-montre, Survie, Marathon, Libre, Duel vs bot, Défi du jour local). PvP réel et classement mondial du défi en phase 2.
 - ✅ **Score Classique** : façon **arcade** (100 / bonne réponse + jusqu'à +100 de bonus vitesse, max 3 000).
-- ✅ **Mode Libre** : pièces **très réduites** (1 pièce / 10 bonnes réponses, plafond 20/jour).
+- ✅ **Mode Libre** : pièces **très réduites** (1 pièce / 3 bonnes réponses, plafond 40/jour).
 - ✅ **Énergie/vies** : **aucune limite**, on joue autant qu'on veut.
 - ✅ **Titres des 20 niveaux** : liste actuelle gardée (à peaufiner plus tard).
-- ✅ **XP** : courbe **durcie** (~239 000 XP pour le niveau 20).
+- ✅ **XP** : courbe **front-loaded** (niveau 10 dès 1 200 XP, ~38 500 XP pour le niveau 20) ; gains de pièces **~2×** sur tous les modes.
 - ✅ **Avatar** : humain stylisé, **central sur l'accueil** (avec ombre au sol). Les 20 avatars et les items seront créés plus tard.
 - ✅ **Direction de design** : **arcade minimal** (fond sombre, monochrome, accent unique, monospace, gros score pixel). Maquettes : `mockups/retro.html` (galerie) + `mockups/prototype.html` (interactif).
 

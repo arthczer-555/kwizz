@@ -12,7 +12,7 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
         #expect(LevelTable.xpToNext.count == 19)
         #expect(LevelTable.cumulative.count == 20)
         #expect(LevelTable.cumulative.first == 0)
-        #expect(LevelTable.totalToMax == 238_850)
+        #expect(LevelTable.totalToMax == 38_500)
         #expect(LevelTable.title(level: 1) == "Niveau 1")
         #expect(LevelTable.title(level: 20) == "Niveau 20")
         for i in 1..<LevelTable.cumulative.count {
@@ -22,21 +22,21 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
 
     @Test func boundaries() {
         #expect(LevelTable.level(totalXP: 0) == 1)
-        #expect(LevelTable.level(totalXP: 149) == 1)
-        #expect(LevelTable.level(totalXP: 150) == 2)
-        #expect(LevelTable.level(totalXP: 449) == 2)
-        #expect(LevelTable.level(totalXP: 450) == 3)
-        #expect(LevelTable.level(totalXP: 238_849) == 19)
-        #expect(LevelTable.level(totalXP: 238_850) == 20)
+        #expect(LevelTable.level(totalXP: 29) == 1)
+        #expect(LevelTable.level(totalXP: 30) == 2)
+        #expect(LevelTable.level(totalXP: 79) == 2)
+        #expect(LevelTable.level(totalXP: 80) == 3)
+        #expect(LevelTable.level(totalXP: 38_499) == 19)
+        #expect(LevelTable.level(totalXP: 38_500) == 20)
         #expect(LevelTable.level(totalXP: 9_000_000) == 20)
         #expect(LevelTable.level(totalXP: -50) == 1)
     }
 
     @Test func progress() {
-        let p = LevelTable.progress(totalXP: 150)
+        let p = LevelTable.progress(totalXP: 30)
         #expect(p.level == 2)
         #expect(p.xpIntoLevel == 0)
-        #expect(p.xpForNextLevel == 300)
+        #expect(p.xpForNextLevel == 50)
         #expect(abs(p.fraction) < 0.0001)
         #expect(p.isMax == false)
 
@@ -90,29 +90,29 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
             Economy.Input(mode: mode, coinMultiplier: diff.coinMultiplier, correctCount: correct, total: total,
                           perfect: perfect, bestStreak: streak, fastCount: fast, scoreFraction: frac, duelWon: duel)
         }
-        // Entraînement: 1 pièce par 3 bonnes réponses, cap 20/jour appliqué par le store.
+        // Entraînement: 1 pièce par 3 bonnes réponses, cap 40/jour appliqué par le store.
         #expect(Economy.coins(input(.entrainement, .facile, correct: 15, total: 15)) == 5)
         #expect(Economy.coins(input(.entrainement, .facile, correct: 2, total: 15)) == 0)
-        // Classique: base x multiplicateur de difficulté, puis +20% (classiqueBonus).
-        #expect(Economy.coins(input(.classique, .normal, correct: 15, total: 15)) == 27)
-        #expect(Economy.coins(input(.classique, .facile, correct: 10, total: 15)) == 12)
-        #expect(Economy.coins(input(.contreLaMontre, .normal, correct: 14)) == 21)
-        #expect(Economy.coins(input(.survie, .facile, correct: 12, streak: 12)) == 14)
-        #expect(Economy.coins(input(.duel, duel: true)) == 15)
-        #expect(Economy.coins(input(.duel, duel: false)) == -15)
-        // Défi du jour: dégressif, fortement orienté sans faute.
-        #expect(Economy.coins(input(.defi, correct: 10, total: 10)) == 150)
-        #expect(Economy.coins(input(.defi, correct: 9, total: 10)) == 50)
-        #expect(Economy.coins(input(.defi, correct: 8, total: 10)) == 30)
+        // Classique: base x multiplicateur de difficulté (x2 vs origine), puis +20% (classiqueBonus).
+        #expect(Economy.coins(input(.classique, .normal, correct: 15, total: 15)) == 54)
+        #expect(Economy.coins(input(.classique, .facile, correct: 10, total: 15)) == 24)
+        #expect(Economy.coins(input(.contreLaMontre, .normal, correct: 14)) == 42)
+        #expect(Economy.coins(input(.survie, .facile, correct: 12, streak: 12)) == 28)
+        #expect(Economy.coins(input(.duel, duel: true)) == 30)
+        #expect(Economy.coins(input(.duel, duel: false)) == -30)
+        // Défi du jour: dégressif, fortement orienté sans faute (x2 vs origine).
+        #expect(Economy.coins(input(.defi, correct: 10, total: 10)) == 500)
+        #expect(Economy.coins(input(.defi, correct: 9, total: 10)) == 100)
+        #expect(Economy.coins(input(.defi, correct: 8, total: 10)) == 60)
         #expect(Economy.coins(input(.defi, correct: 5, total: 10)) == 0)
     }
 
     @Test func defiReward() {
-        #expect(Economy.defiReward(errors: 0) == 150)
-        #expect(Economy.defiReward(errors: 1) == 50)
-        #expect(Economy.defiReward(errors: 2) == 30)
-        #expect(Economy.defiReward(errors: 3) == 20)
-        #expect(Economy.defiReward(errors: 4) == 10)
+        #expect(Economy.defiReward(errors: 0) == 500)
+        #expect(Economy.defiReward(errors: 1) == 100)
+        #expect(Economy.defiReward(errors: 2) == 60)
+        #expect(Economy.defiReward(errors: 3) == 40)
+        #expect(Economy.defiReward(errors: 4) == 20)
         #expect(Economy.defiReward(errors: 5) == 0)
         #expect(Economy.defiReward(errors: 99) == 0)
     }
@@ -165,10 +165,11 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
                                 coinsEarned: 10, xpEarned: 200, isNewRecord: true, duelWon: nil)
         let applied = profile.apply(result: result, day: 20_260_605)
         #expect(profile.totalXP == 200)
-        #expect(profile.level == 2)
-        #expect(applied.leveledUpTo == [2])
-        #expect(applied.levelRewardCoins == 20)
-        #expect(profile.coins == 30)
+        // Nouvelle courbe compressée : 200 XP atteint le niveau 4 (paliers 2, 3, 4).
+        #expect(profile.level == 4)
+        #expect(applied.leveledUpTo == [2, 3, 4])
+        #expect(applied.levelRewardCoins == 90)   // 20 + 30 + 40
+        #expect(profile.coins == 100)             // 10 gagnés + 90 de paliers
         #expect(applied.newRecord)
         #expect(profile.bestScore(mode: .survie, categoryID: "histoire", difficulty: .normal) == 500)
         #expect(profile.gamesPlayed == 1)
@@ -185,9 +186,9 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
         profile.apply(result: training(15), day: day)
         profile.apply(result: training(15), day: day)
         profile.apply(result: training(15), day: day)
-        #expect(profile.coins == 20)
+        #expect(profile.coins == 40)   // cap quotidien 40 (15 + 15 + 10)
         profile.apply(result: training(15), day: day + 1)
-        #expect(profile.coins == 35)
+        #expect(profile.coins == 55)
     }
 
     @Test func duelWalletFloor() {

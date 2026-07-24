@@ -20,7 +20,7 @@ struct DifficultySelectView: View {
     }
 
     private func title(_ d: Difficulty?) -> String { d?.title ?? "Toutes" }
-    private func gainLabel(_ d: Difficulty?) -> String { d?.gainLabel ?? "x1 à x2.5" }
+    private func gainLabel(_ d: Difficulty?) -> String { d?.gainLabel ?? "x2 à x5" }
 
     var body: some View {
         VStack(spacing: 14) {

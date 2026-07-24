@@ -51,7 +51,7 @@ struct HomeView: View {
                                 .foregroundStyle(Theme.muted)
                         }
                         Spacer()
-                        CoinLabel(amount: 50)
+                        CoinLabel(amount: Economy.defiReward(errors: 0))
                     }
                     .kPanel()
                 }

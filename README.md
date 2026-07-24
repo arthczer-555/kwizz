@@ -70,10 +70,11 @@ swift run KwizzCoreCheck
 # 2) Dans Xcode : la cible de tests Swift Testing (Tests/KwizzCoreTests) tourne avec Cmd+U.
 ```
 
-Le runner `KwizzCoreCheck` couvre : table des 20 niveaux (~239 000 XP au total),
-scoring arcade (100 + bonus vitesse), gains de pièces par mode, cap quotidien du mode
-Libre, plancher du portefeuille (Duel), session de quiz, défi du jour déterministe,
-banque de questions. **Statut actuel : 75/75.**
+Le runner `KwizzCoreCheck` couvre : table des 20 niveaux (courbe front-loaded, niveau
+10 atteint à 1 200 XP, ~38 500 XP au total), scoring arcade (100 + bonus vitesse),
+gains de pièces par mode (~2× la version d'origine), cap quotidien du mode Libre,
+plancher du portefeuille (Duel), session de quiz, défi du jour déterministe, banque de
+questions. **Statut actuel : 75/75.**
 
 ## Ce qui est implémenté (MVP)
 

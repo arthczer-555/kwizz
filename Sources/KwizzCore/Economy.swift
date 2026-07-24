@@ -1,10 +1,10 @@
 import Foundation
 
-/// Coin rewards per mode. The economy is deliberately tight (~8-14 coins/min on
-/// active modes) so every shop item stays a real goal. See PLAN.md section 5.3.
+/// Coin rewards per mode. Payouts are ~2× the original tuning across every mode,
+/// so shop items are reached about twice as fast. See PLAN.md section 5.3.
 public enum Economy {
-    public static let trainingDailyCap = 20
-    public static let duelStake = 15
+    public static let trainingDailyCap = 40
+    public static let duelStake = 30
 
     /// Classique pays 20% above the raw base: it is the flagship solo mode, with no
     /// daily cap of its own, so the difficulty multiplier alone undersold it.
@@ -82,7 +82,7 @@ public enum Economy {
     public static func coins(_ i: Input) -> Int {
         switch i.mode {
         case .entrainement:
-            // Training: very reduced, and capped at 20/day by the store, which is
+            // Training: very reduced, and capped at 40/day by the store, which is
             // what really bounds the income. The divisor only sets the grain, so it
             // stays coarse enough to feel like a reward on a 15-question round.
             return i.correctCount / 3
@@ -102,15 +102,15 @@ public enum Economy {
     }
 
     /// Daily-challenge payout. Heavily front-loaded to reward a flawless run: a
-    /// no-mistake grid pays 150, then it drops off sharply with each error so the
+    /// no-mistake grid pays 500, then it drops off sharply with each error so the
     /// "sans faute" stays the real goal.
     public static func defiReward(errors: Int) -> Int {
         switch max(0, errors) {
-        case 0: return 150
-        case 1: return 50
-        case 2: return 30
-        case 3: return 20
-        case 4: return 10
+        case 0: return 500
+        case 1: return 100
+        case 2: return 60
+        case 3: return 40
+        case 4: return 20
         default: return 0
         }
     }

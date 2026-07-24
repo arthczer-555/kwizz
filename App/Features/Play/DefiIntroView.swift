@@ -26,12 +26,12 @@ struct DefiIntroView: View {
             VStack(spacing: 10) {
                 SectionLabel("Récompense")
                 HStack(spacing: 8) {
-                    CoinLabel(amount: 150)
+                    CoinLabel(amount: Economy.defiReward(errors: 0))
                     Text("sans faute")
                         .font(KFont.body(12))
                         .foregroundStyle(Theme.muted)
                 }
-                Text("1 erreur : 50 · 2 : 30 · 3 : 20 · 4 : 10")
+                Text("1 erreur : \(Economy.defiReward(errors: 1)) · 2 : \(Economy.defiReward(errors: 2)) · 3 : \(Economy.defiReward(errors: 3)) · 4 : \(Economy.defiReward(errors: 4))")
                     .font(KFont.body(11))
                     .foregroundStyle(Theme.muted)
                     .multilineTextAlignment(.center)

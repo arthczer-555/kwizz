@@ -15,14 +15,17 @@ public struct LevelReward: Sendable, Equatable {
     public let itemRarity: Rarity?
 }
 
-/// The 20-level progression. Hardened curve: ~239 000 XP to reach level 20.
+/// The 20-level progression. Front-loaded curve: the first ~10 levels come fast
+/// (level 10 is reached at 1 200 XP), then each level costs steeply more, up to
+/// ~38 500 XP to reach level 20 (which stays a rare accomplishment).
 public enum LevelTable {
     public static let maxLevel = 20
 
     /// XP needed to go from level i (1-based) to level i+1. 19 entries.
+    /// Strictly increasing: every level up is harder than the last.
     public static let xpToNext: [Int] = [
-        150, 300, 500, 800, 1200, 1700, 2400, 3300, 4500, 6000,
-        8000, 10500, 13500, 17000, 21000, 26000, 32000, 40000, 50000,
+        30, 50, 70, 100, 130, 160, 190, 220, 250, 350,
+        500, 750, 1100, 1600, 2400, 3600, 5500, 8500, 13000,
     ]
 
     /// Cumulative XP required to *reach* each level. cumulative[0] (level 1) == 0.
