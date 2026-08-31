@@ -17,6 +17,8 @@ final class PlayerStore {
     private let saveURL: URL
     private let adminBackupURL: URL
 
+    private var needsUnlockBackfill = false
+
     init() {
         let url = Self.makeSaveURL()
         self.saveURL = url
@@ -27,6 +29,7 @@ final class PlayerStore {
            let saved = try? JSONDecoder().decode(PlayerProfile.self, from: data) {
             self.profile = saved
             self.hasOnboarded = true
+            needsUnlockBackfill = true
         } else {
             self.profile = PlayerProfile()
             self.hasOnboarded = false
@@ -44,6 +47,10 @@ final class PlayerStore {
             UserDefaults.standard.set(fresh, forKey: "kwizz.clientID")
             self.clientID = fresh
         }
+
+        if needsUnlockBackfill, grantMissingLevelUnlocks() { save() }
+
+        consumeInterruptedDefi()
     }
 
     // MARK: Derived
@@ -56,6 +63,34 @@ final class PlayerStore {
     }
 
     var dailyAvailable: Bool { profile.lastDailyDay != today() }
+
+    // MARK: Défi du jour (anti-abandon)
+
+    /// Jour du défi actuellement en cours. Posé au lancement de la partie, effacé
+    /// dès qu'elle est validée (fin normale ou abandon). S'il survit à la fermeture
+    /// de l'app, c'est que le joueur l'a tuée en pleine partie.
+    private static let defiInProgressKey = "kwizz.defiInProgressDay"
+
+    func markDefiInProgress() {
+        UserDefaults.standard.set(today(), forKey: Self.defiInProgressKey)
+    }
+
+    func clearDefiInProgress() {
+        UserDefaults.standard.removeObject(forKey: Self.defiInProgressKey)
+    }
+
+    /// Ferme le contournement « je tue l'app pour rejouer le défi » : au lancement,
+    /// un marqueur laissé sur le jour courant consomme la tentative (score perdu).
+    /// Le marqueur n'est jamais honoré pour un autre jour, il est simplement
+    /// nettoyé : impossible de bloquer le joueur le lendemain.
+    private func consumeInterruptedDefi() {
+        let defaults = UserDefaults.standard
+        guard let day = defaults.object(forKey: Self.defiInProgressKey) as? Int else { return }
+        defaults.removeObject(forKey: Self.defiInProgressKey)
+        guard day == today(), profile.lastDailyDay != day else { return }
+        profile.registerDaily(day: day)
+        save()
+    }
 
     // MARK: Onboarding
 
@@ -117,10 +152,14 @@ final class PlayerStore {
 
     /// Builds the questions a duel host deals to the room. Seeded so a round is
     /// reproducible; the host broadcasts the resulting questions verbatim, so guests
-    /// never need an identical local question bank.
-    func makeDuelQuestions(seed: UInt64) -> [Question] {
-        bank.query(categoryID: nil, subcategoryID: nil, difficulty: nil,
-                   count: GameMode.duel.questionCount ?? 7, seed: seed)
+    /// never need an identical local question bank. `count` vient des réglages de
+    /// la partie (l'hôte choisit la longueur de la manche).
+    /// `categoryID` vaut `Category.melange.id` (ou nil) pour piocher dans tous les
+    /// thèmes ; sinon toute la manche sort du thème choisi par l'hôte.
+    func makeDuelQuestions(seed: UInt64, count: Int = DuelSettings.defaultQuestionCount,
+                           categoryID: String? = nil) -> [Question] {
+        bank.query(categoryID: categoryID, subcategoryID: nil, difficulty: nil,
+                   count: max(1, count), seed: seed)
     }
 
     /// Records the questions just dealt and trims the history to its cap.
@@ -138,13 +177,23 @@ final class PlayerStore {
         let day = today()
         let applied = profile.apply(result: result, day: day)
         for lvl in applied.leveledUpTo {
-            if let unlockItem = AvatarItem.catalog.first(where: { $0.unlockLevel == lvl }) {
-                profile.ownedItemIDs.insert(unlockItem.id)
-            } else if let rarity = LevelTable.reward(reachingLevel: lvl).itemRarity {
-                grantItem(rarity: rarity)
+            // Un palier peut porter plusieurs cosmétiques (ex: niveau 10) : tous sont dus.
+            let unlocks = AvatarItem.catalog.filter { $0.unlockLevel == lvl }
+            if unlocks.isEmpty {
+                if let rarity = LevelTable.reward(reachingLevel: lvl).itemRarity {
+                    grantItem(rarity: rarity)
+                }
+            } else {
+                for item in unlocks { profile.ownedItemIDs.insert(item.id) }
             }
         }
-        if result.mode == .defi { profile.registerDaily(day: day) }
+        if result.mode == .defi {
+            profile.registerDaily(day: day,
+                                  correct: result.correctCount,
+                                  reward: Economy.defiReward(errors: result.total - result.correctCount))
+            // La partie est validée : le marqueur « défi en cours » n'a plus lieu d'être.
+            clearDefiInProgress()
+        }
         profile.applyWelcomeBonusIfNeeded()
         save()
         return applied
@@ -181,21 +230,6 @@ final class PlayerStore {
         return result
     }
 
-    // MARK: First-cosmetic nudge
-
-    /// True once the player has finished a game, has enough for the cheapest
-    /// cosmetic, and has not yet dismissed the nudge.
-    var showFirstCosmeticNudge: Bool {
-        guard profile.firstGameDone, !profile.firstCosmeticNudgeSeen else { return false }
-        let cheapest = AvatarItem.catalog.filter { $0.unlockLevel == nil }.map(\.price).min() ?? Economy.welcomeFloor
-        return profile.coins >= cheapest
-    }
-
-    func dismissFirstCosmeticNudge() {
-        profile.firstCosmeticNudgeSeen = true
-        save()
-    }
-
     private func grantItem(rarity: Rarity) {
         let owned = profile.ownedItemIDs
         if let item = AvatarItem.catalog.first(where: { $0.rarity == rarity && $0.unlockLevel == nil && !owned.contains($0.id) }) {
@@ -209,6 +243,21 @@ final class PlayerStore {
 
     func isOwned(_ item: AvatarItem) -> Bool { profile.ownedItemIDs.contains(item.id) }
 
+    /// Rattrape les cosmétiques level-locked dont le palier est déjà franchi mais
+    /// qui n'ont jamais été crédités (profil antérieur au palier, palier multiple
+    /// manqué, niveau gagné hors `finish`). Sans ça ils s'affichent en boutique
+    /// comme achetables à 0 pièce. Retourne true si le profil a changé.
+    @discardableResult
+    func grantMissingLevelUnlocks() -> Bool {
+        let due = AvatarItem.catalog.filter { item in
+            guard let level = item.unlockLevel else { return false }
+            return profile.level >= level && !profile.ownedItemIDs.contains(item.id)
+        }
+        guard !due.isEmpty else { return false }
+        for item in due { profile.ownedItemIDs.insert(item.id) }
+        return true
+    }
+
     func isUnlocked(_ item: AvatarItem) -> Bool {
         if let level = item.unlockLevel { return profile.level >= level }
         return true
@@ -217,7 +266,7 @@ final class PlayerStore {
     @discardableResult
     func buy(_ item: AvatarItem) -> Bool {
         guard !isOwned(item) else { return true }
-        guard item.unlockLevel == nil else { return false }
+        guard item.unlockLevel == nil, item.price > 0 else { return false }
         guard profile.coins >= item.price else { return false }
         profile.coins -= item.price
         profile.ownedItemIDs.insert(item.id)
@@ -229,6 +278,22 @@ final class PlayerStore {
         guard isOwned(item) else { return }
         profile.equipped[item.slot.rawValue] = item.id
         save()
+    }
+
+    /// Vide un slot : plus rien d'équipé dans cette catégorie.
+    func unequip(slot: AvatarSlot) {
+        guard profile.equipped[slot.rawValue] != nil else { return }
+        profile.equipped[slot.rawValue] = nil
+        save()
+    }
+
+    /// Équipe l'item, ou le retire s'il est déjà équipé (tap = bascule).
+    func toggleEquip(_ item: AvatarItem) {
+        if isEquipped(item) {
+            unequip(slot: item.slot)
+        } else {
+            equip(item)
+        }
     }
 
     func isEquipped(_ item: AvatarItem) -> Bool {
@@ -326,6 +391,7 @@ final class PlayerStore {
     func resetProfile() {
         let pseudo = profile.pseudo
         profile = PlayerProfile(pseudo: pseudo)
+        clearDefiInProgress()
         save()
     }
 

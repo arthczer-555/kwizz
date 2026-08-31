@@ -171,8 +171,21 @@ private func q(_ id: String, cat: String = "histoire", sub: String? = nil,
         #expect(applied.levelRewardCoins == 90)   // 20 + 30 + 40
         #expect(profile.coins == 100)             // 10 gagnés + 90 de paliers
         #expect(applied.newRecord)
-        #expect(profile.bestScore(mode: .survie, categoryID: "histoire", difficulty: .normal) == 500)
+        // En survie le record est le nombre de questions enchaînées, pas les points.
+        #expect(profile.bestScore(mode: .survie, categoryID: "histoire", difficulty: .normal) == 8)
         #expect(profile.gamesPlayed == 1)
+    }
+
+    /// Les anciennes sauvegardes stockaient un score en points pour la survie :
+    /// il est reconverti en nombre de questions, sans jamais gonfler le record.
+    @Test func survieRecordMigration() {
+        let key = PlayerProfile.recordKey(mode: .survie, categoryID: "histoire", difficulty: .normal)
+        let classiqueKey = PlayerProfile.recordKey(mode: .classique, categoryID: "histoire", difficulty: .normal)
+        let migrated = PlayerProfile.migratedRecords([key: 1500, classiqueKey: 1500])
+        #expect(migrated[key] == 7)              // 1500 / 200, arrondi vers le bas
+        #expect(migrated[classiqueKey] == 1500)  // les autres modes restent en points
+        // Un record déjà exprimé en questions n'est pas retouché.
+        #expect(PlayerProfile.migratedRecords([key: 12])[key] == 12)
     }
 
     @Test func trainingDailyCap() {

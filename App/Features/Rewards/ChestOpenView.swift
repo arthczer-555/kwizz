@@ -6,6 +6,8 @@ struct ChestOpenView: View {
     @Environment(PlayerStore.self) private var store
     @Environment(\.accent) private var accent
     @State private var last: ChestResult?
+    @State private var chestRotation: Double = 0
+    @State private var chestScale: CGFloat = 1
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,6 +15,7 @@ struct ChestOpenView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     counter
+                    chestIcon
                     if let last { reveal(last) }
                     openButton
                     Text("Un coffre contient surtout des pièces, parfois un objet.")
@@ -27,6 +30,14 @@ struct ChestOpenView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .screenBackground()
+    }
+
+    private var chestIcon: some View {
+        Image(systemName: "shippingbox.fill")
+            .font(.system(size: 46))
+            .foregroundStyle(store.profile.ownedChests > 0 ? accent : Theme.faint)
+            .rotationEffect(.degrees(chestRotation))
+            .scaleEffect(chestScale)
     }
 
     private var counter: some View {
@@ -58,16 +69,30 @@ struct ChestOpenView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
         .kPanel()
+        .transition(.scale.combined(with: .opacity))
+    }
+
+    private func handleOpen() {
+        guard let result = store.openChest() else { return }
+        Haptics.impact(.light)
+        withAnimation(.easeInOut(duration: 0.06).repeatCount(6, autoreverses: true)) {
+            chestRotation = 7
+        } completion: {
+            chestRotation = 0
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
+                chestScale = 1.25
+                last = result
+            }
+            Haptics.notify(.success)
+            withAnimation(.easeOut(duration: 0.18).delay(0.15)) {
+                chestScale = 1
+            }
+        }
     }
 
     @ViewBuilder private var openButton: some View {
         if store.profile.ownedChests > 0 {
-            PixelButton(title: "Ouvrir") {
-                if let result = store.openChest() {
-                    withAnimation(.easeOut(duration: 0.2)) { last = result }
-                    Haptics.notify(.success)
-                }
-            }
+            PixelButton(title: "Ouvrir") { handleOpen() }
         } else {
             Text("Aucun coffre. Joue et fais un bon score pour en gagner.")
                 .font(KFont.body(13)).foregroundStyle(Theme.muted)

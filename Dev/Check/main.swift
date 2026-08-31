@@ -28,21 +28,21 @@ func q(_ id: String, cat: String = "histoire", diff: Difficulty = .normal, corre
 // MARK: Level table
 eq(LevelTable.xpToNext.count, 19, "xpToNext count")
 eq(LevelTable.cumulative.count, 20, "cumulative count")
-eq(LevelTable.totalToMax, 238_850, "totalToMax")
+eq(LevelTable.totalToMax, 38_500, "totalToMax")
 eq(LevelTable.title(level: 1), "Niveau 1", "first title")
 eq(LevelTable.title(level: 20), "Niveau 20", "last title")
 check((1..<LevelTable.cumulative.count).allSatisfy { LevelTable.cumulative[$0] > LevelTable.cumulative[$0 - 1] }, "cumulative strictly increasing")
 eq(LevelTable.level(totalXP: 0), 1, "level @0")
-eq(LevelTable.level(totalXP: 149), 1, "level @149")
-eq(LevelTable.level(totalXP: 150), 2, "level @150")
-eq(LevelTable.level(totalXP: 449), 2, "level @449")
-eq(LevelTable.level(totalXP: 450), 3, "level @450")
-eq(LevelTable.level(totalXP: 238_849), 19, "level @238849")
-eq(LevelTable.level(totalXP: 238_850), 20, "level @238850")
+eq(LevelTable.level(totalXP: 29), 1, "level @29")
+eq(LevelTable.level(totalXP: 30), 2, "level @30")
+eq(LevelTable.level(totalXP: 79), 2, "level @79")
+eq(LevelTable.level(totalXP: 80), 3, "level @80")
+eq(LevelTable.level(totalXP: 38_499), 19, "level @38499")
+eq(LevelTable.level(totalXP: 38_500), 20, "level @38500")
 eq(LevelTable.level(totalXP: 9_000_000), 20, "level @max")
 eq(LevelTable.level(totalXP: -50), 1, "level @negative")
-let prog = LevelTable.progress(totalXP: 150)
-eq(prog.level, 2, "progress level"); eq(prog.xpForNextLevel, 300, "progress need"); check(abs(prog.fraction) < 0.0001, "progress fraction 0")
+let prog = LevelTable.progress(totalXP: 30)
+eq(prog.level, 2, "progress level"); eq(prog.xpForNextLevel, 50, "progress need"); check(abs(prog.fraction) < 0.0001, "progress fraction 0")
 check(LevelTable.progress(totalXP: 500_000).isMax, "progress isMax")
 eq(LevelTable.reward(reachingLevel: 2).coins, 20, "reward L2 coins")
 check(LevelTable.reward(reachingLevel: 2).itemRarity == nil, "reward L2 no item")
@@ -64,15 +64,15 @@ func ein(_ mode: GameMode, _ diff: Difficulty = .normal, correct: Int = 10, tota
     Economy.Input(mode: mode, coinMultiplier: diff.coinMultiplier, correctCount: correct, total: total,
                   perfect: perfect, bestStreak: streak, fastCount: fast, scoreFraction: frac, duelWon: duel)
 }
-eq(Economy.coins(ein(.entrainement, .facile, correct: 55)), 5, "entrainement training")
-eq(Economy.coins(ein(.classique, .normal, correct: 20)), 30, "classique normal")
-eq(Economy.coins(ein(.contreLaMontre, .normal, correct: 14)), 21, "clm normal")
-eq(Economy.coins(ein(.survie, .facile, correct: 12, streak: 12)), 14, "survie")
-eq(Economy.coins(ein(.duel, duel: true)), 15, "duel win")
-eq(Economy.coins(ein(.duel, duel: false)), -15, "duel loss")
-eq(Economy.coins(ein(.defi, correct: 10, total: 10)), 150, "defi sans faute")
-eq(Economy.coins(ein(.defi, correct: 9, total: 10)), 50, "defi 1 erreur")
-eq(Economy.coins(ein(.defi, correct: 8, total: 10)), 30, "defi 2 erreurs")
+eq(Economy.coins(ein(.entrainement, .facile, correct: 55)), 18, "entrainement training")
+eq(Economy.coins(ein(.classique, .normal, correct: 20)), 72, "classique normal")
+eq(Economy.coins(ein(.contreLaMontre, .normal, correct: 14)), 42, "clm normal")
+eq(Economy.coins(ein(.survie, .facile, correct: 12, streak: 12)), 28, "survie")
+eq(Economy.coins(ein(.duel, duel: true)), 30, "duel win")
+eq(Economy.coins(ein(.duel, duel: false)), -30, "duel loss")
+eq(Economy.coins(ein(.defi, correct: 10, total: 10)), 500, "defi sans faute")
+eq(Economy.coins(ein(.defi, correct: 9, total: 10)), 100, "defi 1 erreur")
+eq(Economy.coins(ein(.defi, correct: 8, total: 10)), 60, "defi 2 erreurs")
 eq(Economy.coins(ein(.defi, correct: 5, total: 10)), 0, "defi 5 erreurs")
 
 // MARK: Quiz session
@@ -104,10 +104,10 @@ do {
                          maxScore: 3000, correctCount: 8, total: 15, bestStreak: 5, coinsEarned: 10,
                          xpEarned: 200, isNewRecord: true, duelWon: nil)
     let applied = p.apply(result: res, day: 20_260_605)
-    eq(p.totalXP, 200, "profile xp"); eq(p.level, 2, "profile level")
-    eq(applied.leveledUpTo, [2], "leveled up to"); eq(applied.levelRewardCoins, 20, "level reward")
-    eq(p.coins, 30, "profile coins"); check(applied.newRecord, "applied new record")
-    eq(p.bestScore(mode: .survie, categoryID: "histoire", difficulty: .normal), 500, "best score stored")
+    eq(p.totalXP, 200, "profile xp"); eq(p.level, 4, "profile level")
+    eq(applied.leveledUpTo, [2, 3, 4], "leveled up to"); eq(applied.levelRewardCoins, 90, "level reward")
+    eq(p.coins, 100, "profile coins"); check(applied.newRecord, "applied new record")
+    eq(p.bestScore(mode: .survie, categoryID: "histoire", difficulty: .normal), 8, "survie record = questions")
 }
 do {
     var p = PlayerProfile(pseudo: "Test")
@@ -117,9 +117,9 @@ do {
                    correctCount: 0, total: 0, bestStreak: 0, coinsEarned: c, xpEarned: 0, isNewRecord: false, duelWon: nil)
     }
     p.apply(result: training(15), day: day); p.apply(result: training(15), day: day); p.apply(result: training(15), day: day)
-    eq(p.coins, 20, "training cap same day")
+    eq(p.coins, 40, "training cap same day")
     p.apply(result: training(15), day: day + 1)
-    eq(p.coins, 35, "training cap resets next day")
+    eq(p.coins, 55, "training cap resets next day")
 }
 do {
     var p = PlayerProfile(pseudo: "Test"); p.coins = 10
@@ -360,9 +360,9 @@ do {
     check(m.canStart, "host can start at two players")
     m.playerJoined(dpl("g1", "Guest1"))
     eq(m.players.count, 2, "duplicate join ignored")
-    for g in ["g2", "g3", "g4", "g5", "g6"] { m.playerJoined(dpl(g, g)) }
-    eq(m.players.count, 6, "room caps at six")
-    check(m.isFull, "room full at six")
+    for i in 2...20 { m.playerJoined(dpl("g\(i)", "g\(i)")) }
+    eq(m.players.count, DuelMatch.maxPlayers, "room caps at maxPlayers")
+    check(m.isFull, "room full at maxPlayers")
 }
 do {
     var m = DuelMatch(roomCode: "ABCDE", localClientID: "h", host: dpl("h", "Host"))
@@ -372,7 +372,8 @@ do {
     eq(m.phase, .countdown, "start moves to countdown")
     eq(m.points.count, 3, "points seeded for all players")
 
-    // Q0: host and Anna correct, Anna faster -> Anna takes the only point.
+    // Q0 sous la règle par défaut (vitesse + bonnes réponses) : l'hôte et Anna
+    // trouvent, Anna plus vite -> Anna 2 (réponse + bonus), l'hôte 1, Bob 0.
     m.apply(.beginQuestion(index: 0))
     eq(m.phase, .question(index: 0), "question 0 open")
     m.apply(.answer(clientID: "h", index: 0, answer: ans(0, true, 2200)))
@@ -382,8 +383,8 @@ do {
     eq(m.computeWinner(0) ?? "?", "a", "fastest correct wins (Anna)")
     m.apply(.reveal(index: 0, answers: m.snapshot(0), winner: m.computeWinner(0)))
     eq(m.phase, .reveal(index: 0), "reveal 0")
-    eq(m.points["a"] ?? -1, 1, "Anna +1 point")
-    eq(m.points["h"] ?? -1, 0, "host 0 (slower despite correct)")
+    eq(m.points["a"] ?? -1, 2, "Anna : bonne réponse + bonus de vitesse")
+    eq(m.points["h"] ?? -1, 1, "hôte : bonne réponse mais plus lent")
     eq(m.points["b"] ?? -1, 0, "Bob 0 (wrong)")
 
     // Q1: nobody correct -> no point awarded.
@@ -393,7 +394,7 @@ do {
     m.apply(.answer(clientID: "b", index: 1, answer: ans(3, false, 800)))
     check(m.computeWinner(1) == nil, "no winner when nobody is correct")
     m.apply(.reveal(index: 1, answers: m.snapshot(1), winner: m.computeWinner(1)))
-    eq(m.points["a"] ?? -1, 1, "no extra point on q1")
+    eq(m.points["a"] ?? -1, 2, "no extra point on q1")
 
     // Recap data survives for the end screen.
     eq(m.answer(of: "b", at: 0)?.answerIndex ?? -1, 1, "recap keeps Bob's q0 choice")
@@ -443,6 +444,212 @@ func duelInput(_ won: Bool?) -> Economy.Input {
 eq(Economy.coins(duelInput(true)), Economy.duelStake, "duel win = +stake")
 eq(Economy.coins(duelInput(false)), -Economy.duelStake, "duel loss = -stake")
 eq(Economy.coins(duelInput(nil)), 0, "duel draw = 0 stake")
+
+// Duel en ligne : la mise est celle de l'hôte et le vainqueur rafle la cagnotte.
+func wagerInput(_ won: Bool?, _ wager: DuelWager) -> Economy.Input {
+    Economy.Input(mode: .duel, coinMultiplier: 1, correctCount: 3, total: 7, perfect: false,
+                  bestStreak: 0, fastCount: 0, scoreFraction: 0.5, duelWon: won, duelWager: wager)
+}
+let trio = DuelWager(stake: 100, playerCount: 3, winnerCount: 1)
+eq(trio.pot, 300, "3 joueurs à 100 = cagnotte 300")
+eq(trio.winnerShare, 300, "vainqueur unique rafle la cagnotte")
+eq(Economy.coins(wagerInput(true, trio)), 200, "duel gagné = cagnotte - sa mise")
+eq(Economy.coins(wagerInput(false, trio)), -100, "duel perdu = mise perdue")
+
+let tie = DuelWager(stake: 100, playerCount: 4, winnerCount: 2)
+eq(tie.pot, 400, "4 joueurs à 100 = cagnotte 400")
+eq(Economy.coins(wagerInput(true, tie)), 100, "égalité en tête = cagnotte partagée")
+eq(Economy.coins(wagerInput(false, tie)), -100, "perdant d'une partie à égalité = mise perdue")
+
+let friendly = DuelWager(stake: 0, playerCount: 5, winnerCount: 1)
+eq(Economy.coins(wagerInput(true, friendly)), 0, "partie amicale = rien en jeu (gagnant)")
+eq(Economy.coins(wagerInput(false, friendly)), 0, "partie amicale = rien en jeu (perdant)")
+
+eq(DuelWager.suggestedStake(coins: 10_000), DuelWager.defaultStake, "mise par défaut si le porte-monnaie suit")
+eq(DuelWager.suggestedStake(coins: 60), 60, "sinon tout le porte-monnaie")
+eq(DuelWager.suggestedStake(coins: 0), 0, "porte-monnaie vide = partie amicale")
+
+// Curseur de mise : bornes franches, croissance stricte, et accélération vers la
+// droite (la moitié gauche de la course couvre une petite part du porte-monnaie).
+eq(DuelWager.stake(atPosition: 0, maxStake: 1_000), 0, "curseur à gauche = mise nulle")
+eq(DuelWager.stake(atPosition: 1, maxStake: 1_000), 1_000, "curseur à droite = tout miser")
+eq(DuelWager.stake(atPosition: 1, maxStake: 637), 637, "tout miser = le porte-monnaie exact")
+eq(DuelWager.stake(atPosition: 0.5, maxStake: 1_000), 95, "mi-course ≈ 10 % du porte-monnaie")
+check(DuelWager.stake(atPosition: 0.9, maxStake: 1_000) - DuelWager.stake(atPosition: 0.8, maxStake: 1_000)
+      > DuelWager.stake(atPosition: 0.2, maxStake: 1_000) - DuelWager.stake(atPosition: 0.1, maxStake: 1_000),
+      "le curseur va plus vite à droite qu'à gauche")
+eq(DuelWager.stake(atPosition: 0.42, maxStake: 0), 0, "sans pièces, la mise reste nulle")
+
+var previousStake = -1
+var monotonic = true
+for step in 0...100 {
+    let value = DuelWager.stake(atPosition: Double(step) / 100, maxStake: 2_000)
+    if value < previousStake { monotonic = false }
+    previousStake = value
+}
+check(monotonic, "la mise ne décroît jamais quand le curseur avance")
+
+// Aller-retour position <-> mise : la poignée se replace là où on l'a lâchée.
+for reference in [0, 25, 100, 480, 1_000] {
+    let back = DuelWager.stake(atPosition: DuelWager.position(ofStake: reference, maxStake: 1_000), maxStake: 1_000)
+    check(abs(back - reference) <= max(1, reference / 50), "aller-retour curseur stable à \(reference)")
+}
+
+eq(DuelWager.snap(743), 740, "arrondi lisible au-dessus de 200")
+eq(DuelWager.snap(37), 37, "pas de 1 sous 50")
+
+// Salle jusqu'à 16 joueurs : le plafond est respecté et le classement tronqué
+// garde toujours le joueur local, même dernier.
+eq(DuelMatch.maxPlayers, 16, "plafond de 16 joueurs")
+var room = DuelMatch(roomCode: "TEST", localClientID: "p00",
+                     host: DuelPlayer(clientID: "p00", pseudo: "Hote", isHost: true),
+                     settings: DuelSettings(stake: 100, scoring: .vitesseEtBonnesReponses))
+for i in 1...20 {
+    room.playerJoined(DuelPlayer(clientID: String(format: "p%02d", i), pseudo: "J\(i)"))
+}
+eq(room.players.count, 16, "les arrivants au-delà de 16 sont refusés")
+check(room.isFull, "salle pleine à 16")
+check(room.needsCompactRoster, "16 joueurs = affichage compact")
+
+let top = room.topScores(limit: 5, alwaysInclude: "p00")
+eq(top.count, 5, "classement tronqué à 5 lignes")
+check(top.contains { $0.player.clientID == "p00" }, "le joueur local reste affiché même tronqué")
+
+var small = DuelMatch(roomCode: "TEST", localClientID: "a",
+                      host: DuelPlayer(clientID: "a", pseudo: "A", isHost: true),
+                      settings: DuelSettings(stake: 0, scoring: .bonnesReponses))
+small.playerJoined(DuelPlayer(clientID: "b", pseudo: "B"))
+check(!small.needsCompactRoster, "2 joueurs = affichage pleine largeur")
+eq(small.topScores(limit: 5, alwaysInclude: "a").count, 2, "pas de troncature sous la limite")
+
+// Règles de score : « bonnes réponses » fait marquer tout le monde, « vitesse +
+// bonnes réponses » ajoute un point au plus rapide.
+func scoredRoom(_ scoring: DuelScoring) -> DuelMatch {
+    var m = DuelMatch(roomCode: "SCORE", localClientID: "a",
+                      host: DuelPlayer(clientID: "a", pseudo: "A", isHost: true),
+                      settings: DuelSettings(stake: 0, scoring: scoring))
+    m.playerJoined(DuelPlayer(clientID: "b", pseudo: "B"))
+    m.playerJoined(DuelPlayer(clientID: "c", pseudo: "C"))
+    m.beginRound(questions: [q("s1")], roundID: "r")
+    return m
+}
+// a et b trouvent (a plus vite), c se trompe.
+let snap: [String: DuelAnswer] = [
+    "a": DuelAnswer(answerIndex: 0, correct: true, elapsedMs: 900),
+    "b": DuelAnswer(answerIndex: 0, correct: true, elapsedMs: 2_400),
+    "c": DuelAnswer(answerIndex: 1, correct: false, elapsedMs: 1_100),
+]
+do {
+    var m = scoredRoom(.bonnesReponses)
+    m.openQuestion(0)
+    m.applyReveal(index: 0, snapshot: snap, winner: "a")
+    eq(m.points["a"] ?? 0, 1, "bonnes réponses : le plus rapide marque 1")
+    eq(m.points["b"] ?? 0, 1, "bonnes réponses : tout le monde qui trouve marque")
+    eq(m.points["c"] ?? 0, 0, "bonnes réponses : une erreur ne marque pas")
+    eq(m.winners[0], "a", "la couronne reste au plus rapide")
+}
+do {
+    var m = scoredRoom(.vitesseEtBonnesReponses)
+    m.openQuestion(0)
+    m.applyReveal(index: 0, snapshot: snap, winner: "a")
+    eq(m.points["a"] ?? 0, 2, "vitesse : bonne réponse + bonus de rapidité")
+    eq(m.points["b"] ?? 0, 1, "vitesse : bonne réponse plus lente = 1 seul point")
+    eq(m.points["c"] ?? 0, 0, "vitesse : une erreur ne marque pas")
+    // À égalité de points et de bonnes réponses, le plus rapide passe devant.
+    let board = m.scoreboard
+    eq(board.first?.player.clientID, "a", "le plus rapide est en tête")
+}
+do {
+    var m = scoredRoom(.bonnesReponses)
+    m.openQuestion(0)
+    m.applyReveal(index: 0, snapshot: snap, winner: "a")
+    let board = m.scoreboard
+    eq(board[0].player.clientID, "a", "égalité départagée par le temps cumulé")
+    eq(board[0].rank, 1, "les ex aequo partagent le rang 1")
+    eq(board[1].rank, 1, "b est aussi premier à égalité de points")
+}
+eq(DuelSettings.default.scoring, .vitesseEtBonnesReponses, "règle par défaut = vitesse + bonnes réponses")
+eq(DuelScoring.bonnesReponses.speedBonus, 0, "pas de bonus de vitesse en mode bonnes réponses")
+
+// Thème de la partie : par défaut tous les thèmes, un id inconnu (autre version
+// de l'app) retombe sur le mélange, et un `settings` d'avant le réglage se décode.
+eq(DuelSettings.default.categoryID, Category.melange.id, "thème par défaut = mélange")
+eq(DuelSettings(stake: 0, scoring: .bonnesReponses, categoryID: "sport").categoryID, "sport",
+   "le thème choisi est retenu")
+eq(DuelSettings(stake: 0, scoring: .bonnesReponses, categoryID: "inconnu").categoryID, Category.melange.id,
+   "un thème inconnu retombe sur le mélange")
+eq(DuelSettings(stake: 0, scoring: .bonnesReponses, categoryID: "sport").themeLabel, "SPORT",
+   "libellé du thème choisi")
+eq(DuelSettings.default.themeLabel, "TOUT", "le mélange s'affiche « Tout » en duel")
+do {
+    let legacy = Data(#"{"stake":50,"scoring":"bonnesReponses"}"#.utf8)
+    let decoded = try! JSONDecoder().decode(DuelSettings.self, from: legacy)
+    eq(decoded.categoryID, Category.melange.id, "settings sans thème = mélange")
+    eq(decoded.stake, 50, "settings sans thème : la mise est lue")
+    let round = try! JSONDecoder().decode(DuelSettings.self,
+                                          from: try! JSONEncoder().encode(DuelSettings(stake: 10, scoring: .bonnesReponses, categoryID: "histoire")))
+    eq(round.categoryID, "histoire", "aller-retour JSON du thème")
+}
+
+// La cagnotte suit le nombre de joueurs jusqu'à 16.
+let bigWager = DuelWager(stake: 100, playerCount: 16, winnerCount: 1)
+eq(bigWager.pot, 1_600, "cagnotte d'une salle de 16 à 100 pièces")
+eq(bigWager.payout(isWinner: true), 1_500, "le vainqueur d'une salle de 16 gagne 15 fois sa mise")
+
+// MARK: Duel : longueur de la manche
+eq(DuelSettings.default.questionCount, DuelSettings.defaultQuestionCount, "longueur par défaut")
+eq(DuelSettings(stake: 0, scoring: .bonnesReponses, questionCount: 21).questionCount, 21,
+   "la longueur choisie est retenue")
+eq(DuelSettings(stake: 0, scoring: .bonnesReponses, questionCount: 12).questionCount, 11,
+   "une longueur hors paliers retombe sur le plus proche")
+eq(DuelSettings(stake: 0, scoring: .bonnesReponses, questionCount: 99).questionCount, 21,
+   "une longueur démesurée est bornée au plus long palier")
+check(DuelSettings.questionCountOptions == [7, 11, 15, 21], "paliers de longueur proposés")
+check(DuelSettings.estimatedMinutes(questionCount: 7) < DuelSettings.estimatedMinutes(questionCount: 21),
+      "une manche plus longue s'annonce plus longue")
+do {
+    let legacy = Data(#"{"stake":50,"scoring":"bonnesReponses"}"#.utf8)
+    let decoded = try! JSONDecoder().decode(DuelSettings.self, from: legacy)
+    eq(decoded.questionCount, DuelSettings.defaultQuestionCount, "settings sans longueur = valeur par défaut")
+    let round = try! JSONDecoder().decode(DuelSettings.self,
+                                          from: try! JSONEncoder().encode(DuelSettings(stake: 10, scoring: .bonnesReponses, questionCount: 15)))
+    eq(round.questionCount, 15, "aller-retour JSON de la longueur")
+}
+
+// MARK: Duel : revanche avec les mêmes joueurs
+do {
+    let host = DuelPlayer(clientID: "h", pseudo: "Hôte", isHost: true)
+    let guest = DuelPlayer(clientID: "g", pseudo: "Invité")
+    var match = DuelMatch(roomCode: "ABCD", localClientID: "h", host: host,
+                          settings: DuelSettings(stake: 20, scoring: .bonnesReponses, questionCount: 11))
+    match.apply(.hello(player: guest))
+    let questions = (0..<3).map { q("duel\($0)") }
+    match.apply(.start(questions: questions, roundID: "r1"))
+    match.apply(.beginQuestion(index: 0))
+    match.apply(.answer(clientID: "h", index: 0, answer: DuelAnswer(answerIndex: 0, correct: true, elapsedMs: 900)))
+    match.apply(.reveal(index: 0, answers: match.snapshot(0), winner: "h"))
+    match.apply(.finish)
+    check(match.phase == .finished, "la manche se termine au podium")
+    eq(match.points["h"] ?? 0, 1, "l'hôte a marqué son point")
+
+    match.apply(.rematch)
+    check(match.phase == .lobby, "la revanche renvoie la salle au salon")
+    eq(match.players.count, 2, "les joueurs présents restent dans la salle")
+    eq(match.roomCode, "ABCD", "le code de la salle ne change pas")
+    eq(match.stake, 20, "la mise est reconduite")
+    eq(match.plannedQuestionCount, 11, "la longueur est reconduite")
+    eq(match.totalQuestions, 0, "les questions de la manche écoulée sont effacées")
+    eq(match.points["h"] ?? 0, 0, "les points repartent de zéro")
+    eq(match.stakedPlayerCount, 0, "entre deux manches plus personne n'a misé")
+    check(match.canStart, "l'hôte peut relancer aussitôt")
+
+    // Une revanche ne s'applique que depuis le podium : en pleine manche elle est ignorée.
+    var live = DuelMatch(roomCode: "EFGH", localClientID: "h", host: host)
+    live.apply(.hello(player: guest))
+    live.apply(.start(questions: questions, roundID: "r2"))
+    live.apply(.rematch)
+    check(live.phase == .countdown, "une revanche en pleine manche est ignorée")
+}
 
 // MARK: Report
 print("")

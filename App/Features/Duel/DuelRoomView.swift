@@ -12,6 +12,9 @@ struct DuelRoomView: View {
                 switch duel.match.phase {
                 case .lobby, .countdown:
                     DuelLobbyView(duel: duel)
+                    // Un invité découvre la mise en entrant : il la confirme
+                    // avant de pouvoir faire quoi que ce soit du salon.
+                    if duel.needsStakeConfirmation { StakeConfirmOverlay(duel: duel) }
                     if let n = duel.countdown { CountdownOverlay(value: n) }
                 case .question, .reveal:
                     DuelGameView(duel: duel)
@@ -23,6 +26,7 @@ struct DuelRoomView: View {
         .screenBackground()
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .animation(.easeInOut(duration: 0.15), value: router.activeDuel?.needsStakeConfirmation)
         .onChange(of: router.activeDuel == nil) { _, gone in if gone { dismiss() } }
     }
 }

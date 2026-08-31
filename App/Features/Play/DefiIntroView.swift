@@ -18,10 +18,22 @@ struct DefiIntroView: View {
             Text("Défi du jour")
                 .font(KFont.mono(16))
 
-            Text("Une grille unique, la même pour tout le monde aujourd'hui. Une seule tentative.")
+            Text("Une grille unique, la même pour tout le monde aujourd'hui.")
                 .font(KFont.body(14))
                 .foregroundStyle(Theme.muted)
                 .multilineTextAlignment(.center)
+
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 11))
+                Text("Une seule tentative. Si tu quittes l'app en cours de route, ton défi est validé en l'état.")
+                    .font(KFont.mono(11))
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundStyle(Theme.muted)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .kPanel(12)
 
             VStack(spacing: 10) {
                 SectionLabel("Récompense")

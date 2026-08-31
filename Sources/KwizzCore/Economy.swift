@@ -4,6 +4,8 @@ import Foundation
 /// so shop items are reached about twice as fast. See PLAN.md section 5.3.
 public enum Economy {
     public static let trainingDailyCap = 40
+    /// Mise fixe des duels sans salon (duel contre un bot, ligue 1v1). Les duels
+    /// en ligne utilisent la mise choisie par l'hôte, cf. `DuelWager`.
     public static let duelStake = 30
 
     /// Classique pays 20% above the raw base: it is the flagship solo mode, with no
@@ -62,9 +64,12 @@ public enum Economy {
         public let fastCount: Int
         public let scoreFraction: Double
         public let duelWon: Bool?
+        /// Mise d'un duel en ligne. nil = duel à mise fixe (bot solo, ligue 1v1).
+        public let duelWager: DuelWager?
 
         public init(mode: GameMode, coinMultiplier: Double, correctCount: Int, total: Int, perfect: Bool,
-                    bestStreak: Int, fastCount: Int, scoreFraction: Double, duelWon: Bool?) {
+                    bestStreak: Int, fastCount: Int, scoreFraction: Double, duelWon: Bool?,
+                    duelWager: DuelWager? = nil) {
             self.mode = mode
             self.coinMultiplier = coinMultiplier
             self.correctCount = correctCount
@@ -74,6 +79,7 @@ public enum Economy {
             self.fastCount = fastCount
             self.scoreFraction = scoreFraction
             self.duelWon = duelWon
+            self.duelWager = duelWager
         }
     }
 
@@ -95,6 +101,9 @@ public enum Economy {
         case .duel:
             // duelWon nil = match nul (ligue 1v1) : ni mise gagnée ni perdue.
             guard let won = i.duelWon else { return 0 }
+            // Duel en ligne : la mise est celle choisie par l'hôte et le vainqueur
+            // rafle la cagnotte. Sans mise annoncée, on retombe sur la mise fixe.
+            if let wager = i.duelWager { return wager.payout(isWinner: won) }
             return won ? duelStake : -duelStake
         case .defi:
             return defiReward(errors: i.total - i.correctCount)

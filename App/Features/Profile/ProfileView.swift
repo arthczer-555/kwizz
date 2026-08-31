@@ -6,6 +6,7 @@ struct ProfileView: View {
     @State private var editingPseudo = false
 
     private let columns = [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)]
+    private let statColumns = Array(repeating: GridItem(.flexible(), spacing: 9), count: 3)
 
     var body: some View {
         ScrollView {
@@ -39,24 +40,9 @@ struct ProfileView: View {
                     XPBar(fraction: store.profile.levelProgress.fraction)
                 }
 
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        SectionLabel("Skill")
-                        Text("basé sur tes meilleurs scores")
-                            .font(KFont.body(10))
-                            .foregroundStyle(Theme.muted)
-                    }
-                    Spacer()
-                    Text("\(store.profile.skillScore)")
-                        .font(KFont.mono(22))
-                        .foregroundStyle(accent)
-                }
-                .kPanel()
-
-                LazyVGrid(columns: columns, spacing: 9) {
+                LazyVGrid(columns: statColumns, spacing: 9) {
                     stat("Parties", "\(store.profile.gamesPlayed)")
                     stat("% Bonnes", "\(Int(store.profile.accuracy * 100))")
-                    stat("Meilleur", "\(store.profile.bestScoreOverall)")
                     stat("Série max", "\(store.profile.bestStreakEver)")
                 }
 
@@ -66,6 +52,15 @@ struct ProfileView: View {
                     ForEach(GameMode.allCases.filter(\.tracksRecord)) { mode in
                         record(mode)
                     }
+                }
+
+                HStack {
+                    SectionLabel("Score par thème")
+                    Spacer()
+                    NavigationLink(value: Route.themeStats) {
+                        Text("voir →").font(KFont.mono(11)).foregroundStyle(Theme.muted)
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 HStack {
@@ -92,6 +87,8 @@ struct ProfileView: View {
         VStack {
             Text(value).font(KFont.mono(17)).foregroundStyle(accent)
             SectionLabel(label)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity)
         .kPanel()
@@ -120,14 +117,18 @@ struct ProfileView: View {
         .kPanel()
     }
 
-    /// Most modes display their best score; duel shows wins over total played and
-    /// the daily challenge shows how many have been finished.
+    /// Most modes display their best score; duel shows wins over total played, the
+    /// daily challenge shows how many have been finished and survie counts the
+    /// questions chained before the first mistake.
     private func recordValue(_ mode: GameMode) -> String {
         switch mode {
         case .duel:
             return "\(store.profile.duelWins)/\(store.profile.duelGames) gagnés"
         case .defi:
             return "\(store.profile.defiCompletedCount) fini\(store.profile.defiCompletedCount > 1 ? "s" : "")"
+        case .survie:
+            let best = store.profile.bestScore(forMode: mode)
+            return best > 0 ? "\(best) d'affilée" : "-"
         default:
             let best = store.profile.bestScore(forMode: mode)
             return best > 0 ? "\(best)" : "-"

@@ -46,9 +46,15 @@ Deno.serve(async (req) => {
     const { data, error } = await admin.rpc("enqueue_ranked", {
       p_user: user.id, p_pseudo: pseudo, p_accent: accent,
     });
-    // Erreur transitoire (ex. collision d'appariement) : on renvoie 'queued' pour
-    // que le client re-tente au prochain poll, au lieu d'échouer durement.
-    if (error) return json({ status: "queued" });
+    // Une erreur SQL ici (fonction absente, contrainte violée, banque de questions
+    // vide...) ne DOIT PAS être maquillée en 'queued' : les deux joueurs
+    // resteraient en recherche jusqu'au timeout sans que rien ne le signale, ce
+    // qui rend la panne indiagnosticable. On loggue et on remonte le code PG.
+    if (error) {
+      console.error("enqueue_ranked a échoué", error);
+      return json({ error: "enqueue_failed", code: error.code ?? null,
+                    message: error.message ?? String(error) }, 500);
+    }
     return json(data); // {status:'matched',matchId,role} | {status:'queued'}
   } catch (_e) {
     return json({ error: "server" }, 500);

@@ -137,13 +137,16 @@ struct SectionLabel: View {
 struct CoinLabel: View {
     let amount: Int
     var color: Color?
+    /// Taille du chiffre ; la pastille suit proportionnellement.
+    var size: CGFloat = 14
     @Environment(\.accent) private var accent
 
     var body: some View {
-        HStack(spacing: 5) {
-            Circle().strokeBorder(color ?? accent, lineWidth: 1.5).frame(width: 9, height: 9)
+        HStack(spacing: size * 0.36) {
+            Circle().strokeBorder(color ?? accent, lineWidth: 1.5)
+                .frame(width: size * 0.64, height: size * 0.64)
             Text("\(amount)")
-                .font(KFont.mono(14, bold: true))
+                .font(KFont.mono(size, bold: true))
                 .foregroundStyle(color ?? accent)
         }
     }

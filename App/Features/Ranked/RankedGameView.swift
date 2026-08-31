@@ -100,7 +100,9 @@ struct RankedGameView: View {
             HStack(spacing: 6) {
                 Image(systemName: "bolt.fill").font(.system(size: 12))
                 if let winner, let p = controller.match?.player(id: winner) {
-                    Text("\(p.pseudo.uppercased()) +1").font(KFont.mono(11, bold: true)).tracking(1)
+                    // Un point par bonne réponse : le plus rapide ne rafle plus le
+                    // point, sa vitesse ne compte qu'au départage final.
+                    Text("\(p.pseudo.uppercased()) LE PLUS RAPIDE").font(KFont.mono(11, bold: true)).tracking(1)
                 } else {
                     Text("PERSONNE N'A TROUVÉ").font(KFont.mono(11, bold: true)).tracking(1)
                 }

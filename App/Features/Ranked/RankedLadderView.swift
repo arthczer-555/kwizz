@@ -47,6 +47,10 @@ struct RankedLadderView: View {
                 tierCard
                 PixelButton(title: "Trouver un adversaire") { router.startRanked() }
 
+                SectionLabel("Règles")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                rulesCard
+
                 SectionLabel("Tous les rangs")
                     .frame(maxWidth: .infinity, alignment: .leading)
                 RankFrieze(current: tier)
@@ -74,6 +78,27 @@ struct RankedLadderView: View {
         .navigationDestination(isPresented: roomBinding) { RankedRoomView() }
         .task { await load() }
         .refreshable { await load() }
+    }
+
+    /// Les règles du 1v1 classé, en quatre lignes : c'est le seul endroit où le
+    /// joueur apprend que les deux marquent et que l'égalité se départage au temps.
+    private var rulesCard: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            rule("7 questions, 15 s chacune")
+            rule("1 point par bonne réponse : vous pouvez marquer tous les deux")
+            rule("Égalité : le plus rapide au temps cumulé l'emporte")
+            rule("Aucune pièce en jeu, seul le classement bouge")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .kPanel(14)
+    }
+
+    private func rule(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 7) {
+            Text("›").font(KFont.mono(11, bold: true)).foregroundStyle(accent)
+            Text(text).font(KFont.mono(11)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var tierCard: some View {

@@ -218,3 +218,45 @@ $$ language plpgsql security definer set search_path = public;
 -- question, ELO) vivront dans des Edge Functions (phases A2/A3), pas ici. Le
 -- balayage des matchs expirés (sweep_ranked) viendra en phase A5.
 -- =============================================================================
+
+-- =============================================================================
+-- D. PROFIL PUBLIC (cliquer un joueur du classement -> voir son profil)
+-- =============================================================================
+-- Objectif : depuis le classement mensuel, ouvrir le profil d'un autre joueur
+-- avec ses scores ET son perso (avatar + accent). Le RLS restreint profiles /
+-- equipped_items / best_scores au propriétaire ; plutôt que de l'ouvrir, on
+-- expose une RPC SECURITY DEFINER qui ne renvoie QUE des champs publics.
+
+-- D.1 Couleur d'accent du joueur (Theme.Accent : vert/ambre/cyan/mono). Purement
+--     local jusqu'ici ; on la stocke pour rendre le perso avec la bonne couleur.
+alter table profiles add column if not exists accent text;
+
+-- D.2 L'enum avatar_slot ne couvrait que 6 slots ; l'app en a 9 (AvatarSlot).
+--     On ajoute les 3 manquants pour pouvoir synchroniser tout l'équipement.
+--     (ADD VALUE ne peut pas être utilisé dans la même transaction que son usage.)
+alter type avatar_slot add value if not exists 'cou';
+alter type avatar_slot add value if not exists 'main';
+alter type avatar_slot add value if not exists 'dos';
+
+-- D.3 Profil public en lecture seule : whitelist de champs, contourne le RLS des
+--     tables de base sans l'affaiblir. best_score = meilleur score tous modes.
+create or replace function get_public_profile(p_user_id uuid)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'user_id', p.id,
+    'pseudo', p.pseudo,
+    'total_xp', p.total_xp,
+    'accent', p.accent,
+    'games_played', p.games_played,
+    'total_correct', p.total_correct,
+    'total_answered', p.total_answered,
+    'best_streak_ever', p.best_streak_ever,
+    'best_score', coalesce((select max(score) from best_scores b where b.user_id = p.id), 0),
+    'equipped', coalesce((select jsonb_agg(jsonb_build_object('slot', e.slot, 'item_id', e.item_id))
+                          from equipped_items e where e.user_id = p.id), '[]'::jsonb)
+  )
+  from profiles p
+  where p.id = p_user_id;
+$$;
+
+grant execute on function get_public_profile(uuid) to anon, authenticated;

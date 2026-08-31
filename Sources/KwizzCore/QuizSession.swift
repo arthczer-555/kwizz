@@ -38,6 +38,11 @@ public struct QuizSession: Sendable {
     /// derive an effective (averaged) multiplier for the round's coin reward.
     private var coinMultiplierSum = 0.0
 
+    /// Réussite par thème sur cette manche, indexée par `Question.categoryID`.
+    /// En mode « tous les thèmes » une manche alimente plusieurs entrées ; c'est
+    /// la clé du suivi « mon score par thème » côté profil.
+    public private(set) var themeBreakdown: [String: ThemeStat] = [:]
+
     public init(mode: GameMode, difficulty: Difficulty?, categoryID: String?, questions: [Question]) {
         self.mode = mode
         self.difficulty = difficulty
@@ -63,6 +68,11 @@ public struct QuizSession: Sendable {
         }
         answered += 1
         let correct = answerIndex == q.correctIndex
+        // Le thème de la question, pas celui de la manche : en « tous les thèmes »
+        // chaque question compte pour sa propre catégorie.
+        themeBreakdown[q.categoryID, default: ThemeStat()].merge(
+            ThemeStat(correct: correct ? 1 : 0, answered: 1)
+        )
         let fast = remainingFraction > 0.5
         let gained = Scoring.questionScore(correct: correct, remainingFraction: remainingFraction, hasSpeedBonus: mode.hasPerQuestionTimer)
         if correct {
@@ -90,7 +100,7 @@ public struct QuizSession: Sendable {
 
     public mutating func finish() { isOver = true }
 
-    public func makeResult(previousBest: Int, duelWon: Bool? = nil) -> GameResult {
+    public func makeResult(previousBest: Int, duelWon: Bool? = nil, duelWager: DuelWager? = nil) -> GameResult {
         let displayTotal = mode.questionCount ?? max(answered, 1)
         let maxS = Scoring.maxScore(questionCount: displayTotal, hasSpeedBonus: mode.hasPerQuestionTimer)
         let frac = maxS > 0 ? Double(score) / Double(maxS) : 0
@@ -102,16 +112,18 @@ public struct QuizSession: Sendable {
         let input = Economy.Input(
             mode: mode, coinMultiplier: effectiveMultiplier, correctCount: correctCount,
             total: displayTotal, perfect: perfect && correctCount > 0, bestStreak: bestStreak,
-            fastCount: fastCount, scoreFraction: frac, duelWon: duelWon
+            fastCount: fastCount, scoreFraction: frac, duelWon: duelWon, duelWager: duelWager
         )
         let coins = Economy.coins(input)
         let xp = xpEarned
-        let record = mode.tracksRecord && score > previousBest
+        let recordValue = mode.recordsQuestionCount ? correctCount : score
+        let record = mode.tracksRecord && recordValue > previousBest
         return GameResult(
             mode: mode, difficulty: difficulty, categoryID: categoryID,
             score: score, maxScore: maxS, correctCount: correctCount,
             total: displayTotal, bestStreak: bestStreak,
-            coinsEarned: coins, xpEarned: xp, isNewRecord: record, duelWon: duelWon
+            coinsEarned: coins, xpEarned: xp, isNewRecord: record, duelWon: duelWon,
+            themeBreakdown: themeBreakdown
         )
     }
 }

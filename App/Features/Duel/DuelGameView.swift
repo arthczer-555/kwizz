@@ -40,6 +40,13 @@ struct DuelGameView: View {
             Text(String(format: "QUESTION %02d/%02d", index + 1, duel.match.totalQuestions))
                 .font(KFont.mono(12)).foregroundStyle(Theme.muted)
             Spacer()
+            if duel.stake > 0 {
+                HStack(spacing: 5) {
+                    Text("CAGNOTTE").font(KFont.mono(9)).tracking(1).foregroundStyle(Theme.muted)
+                    CoinLabel(amount: duel.pot)
+                }
+                .padding(.trailing, 10)
+            }
             Button { router.goHome() } label: {
                 Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
             }
@@ -76,7 +83,12 @@ struct DuelGameView: View {
             HStack(spacing: 6) {
                 Image(systemName: "bolt.fill").font(.system(size: 12))
                 if let winner, let p = duel.match.player(id: winner) {
-                    Text("\(p.pseudo.uppercased()) +1").font(KFont.mono(11, bold: true)).tracking(1)
+                    // Le bonus de vitesse n'existe que dans une des deux règles :
+                    // annoncer « +1 » dans l'autre mentirait sur les points.
+                    let bonus = duel.scoring.speedBonus
+                    Text(bonus > 0 ? "\(p.pseudo.uppercased()) LE PLUS RAPIDE +\(bonus)"
+                                   : "\(p.pseudo.uppercased()) A RÉPONDU EN PREMIER")
+                        .font(KFont.mono(11, bold: true)).tracking(1)
                 } else {
                     Text("PERSONNE N'A TROUVÉ").font(KFont.mono(11, bold: true)).tracking(1)
                 }
@@ -91,13 +103,33 @@ struct DuelGameView: View {
             }
 
             Divider().overlay(Theme.border)
-            SectionLabel("Réponses")
-            ForEach(duel.match.players) { player in
-                answerRecapRow(player: player, q: q, isWinner: player.clientID == winner)
+            HStack {
+                SectionLabel("Réponses")
+                Spacer()
+                Text("\(correctCount(q)) / \(duel.match.players.count) ONT TROUVÉ")
+                    .font(KFont.mono(9)).tracking(1).foregroundStyle(Theme.muted)
+            }
+            // Grande salle : deux colonnes, sinon 16 lignes noient l'explication.
+            if duel.match.needsCompactRoster {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+                          alignment: .leading, spacing: 6) {
+                    ForEach(duel.match.players) { player in
+                        answerRecapRow(player: player, q: q, isWinner: player.clientID == winner)
+                    }
+                }
+            } else {
+                ForEach(duel.match.players) { player in
+                    answerRecapRow(player: player, q: q, isWinner: player.clientID == winner)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .kPanel(12)
+    }
+
+    /// Combien de joueurs ont trouvé la question révélée.
+    private func correctCount(_ q: Question) -> Int {
+        duel.match.players.filter { duel.match.answer(of: $0.clientID, at: index)?.correct == true }.count
     }
 
     private func answerRecapRow(player: DuelPlayer, q: Question, isWinner: Bool) -> some View {
@@ -139,7 +171,9 @@ struct DuelGameView: View {
 /// An answer button for the duel: like the solo `AnswerRow` but with a "selected
 /// but not yet revealed" state (you've locked your answer, waiting for the others).
 struct DuelAnswerRow: View {
-    enum State { case idle, selected, correct, wrong, dim }
+    /// `selected` = réponse verrouillée, correction pas encore tombée : la case
+    /// s'allume en blanc (neutre), le vert / rouge est réservé à la révélation.
+    enum State: Equatable { case idle, selected, correct, wrong, dim }
 
     let letter: String
     let text: String
@@ -159,31 +193,34 @@ struct DuelAnswerRow: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(Rectangle().stroke(borderColor, lineWidth: 1))
+            .overlay(Rectangle().stroke(borderColor, lineWidth: state == .selected ? 2 : 1))
             .opacity(state == .dim ? 0.4 : 1)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .animation(.easeOut(duration: 0.12), value: state)
     }
 
     private var borderColor: Color {
         switch state {
-        case .correct, .selected: accent
+        case .correct: accent
         case .wrong: Theme.bad
+        case .selected: Theme.text
         default: Theme.border
         }
     }
     private var textColor: Color {
         switch state {
-        case .correct, .selected: accent
+        case .correct: accent
         case .wrong: Theme.bad
         default: Theme.text
         }
     }
     private var keyColor: Color {
         switch state {
-        case .correct, .selected: accent
+        case .correct: accent
         case .wrong: Theme.bad
+        case .selected: Theme.text
         default: Theme.muted
         }
     }

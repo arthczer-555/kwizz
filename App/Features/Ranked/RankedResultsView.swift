@@ -84,8 +84,11 @@ struct RankedResultsView: View {
     private func gains(_ result: GameResult) -> some View {
         VStack(spacing: 0) {
             row("Bonnes réponses", "\(result.correctCount)/\(result.total)")
-            Divider().overlay(Theme.border)
-            row("Pièces", result.coinsEarned >= 0 ? "+\(result.coinsEarned)" : "\(result.coinsEarned)", highlight: true)
+            // Pas de mise en ligue : la ligne disparaît au lieu d'afficher « +0 ».
+            if result.coinsEarned != 0 {
+                Divider().overlay(Theme.border)
+                row("Pièces", result.coinsEarned >= 0 ? "+\(result.coinsEarned)" : "\(result.coinsEarned)", highlight: true)
+            }
             Divider().overlay(Theme.border)
             row("XP", "+\(result.xpEarned)")
             if let chests = controller.localApplied?.chestsEarned, chests > 0 {

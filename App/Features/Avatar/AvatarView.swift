@@ -54,7 +54,7 @@ struct AvatarView: View {
                         LazyVGrid(columns: columns, spacing: 10) {
                             ForEach(owned) { item in
                                 Button {
-                                    store.equip(item)
+                                    store.toggleEquip(item)
                                 } label: {
                                     WardrobeItemCard(
                                         item: item,
@@ -107,7 +107,7 @@ private struct WardrobeItemCard: View {
                     .foregroundStyle(Theme.text)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
-                Text(equipped ? "ÉQUIPÉ" : "ÉQUIPER")
+                Text(equipped ? "RETIRER" : "ÉQUIPER")
                     .font(KFont.mono(10)).tracking(1)
                     .foregroundStyle(equipped ? accent : Theme.muted)
             }

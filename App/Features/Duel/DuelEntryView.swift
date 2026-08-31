@@ -5,6 +5,7 @@ struct DuelEntryView: View {
     @Environment(Router.self) private var router
     @Environment(\.accent) private var accent
     @State private var code = ""
+    @State private var goSetup = false
     @State private var goLobby = false
 
     var body: some View {
@@ -13,12 +14,8 @@ struct DuelEntryView: View {
                 BackHeader(title: "Duel en ligne")
 
                 VStack(alignment: .leading, spacing: 10) {
-                    SectionLabel("Créer une partie")
-                    Text("Tu deviens l'hôte. Partage le code à tes amis : 2 à 6 joueurs, mêmes questions, le plus rapide gagne.")
-                        .font(KFont.body(13)).foregroundStyle(Theme.muted)
                     PixelButton(title: "Créer une partie") {
-                        router.createDuel()
-                        goLobby = true
+                        goSetup = true
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -40,6 +37,8 @@ struct DuelEntryView: View {
                             let cleaned = RoomCode.normalize(newValue)
                             if cleaned != code { code = cleaned }
                         }
+                    Text("La mise est fixée par l'hôte : il te faudra assez de pièces pour entrer.")
+                        .font(KFont.body(12)).foregroundStyle(Theme.muted)
                     PixelButton(title: "Rejoindre", style: .ghost) {
                         guard RoomCode.isValid(code) else { return }
                         router.joinDuel(code: code)
@@ -65,6 +64,7 @@ struct DuelEntryView: View {
         .screenBackground()
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(isPresented: $goSetup) { DuelSetupView() }
         .navigationDestination(isPresented: $goLobby) { DuelRoomView() }
     }
 }

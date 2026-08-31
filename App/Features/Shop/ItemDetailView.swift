@@ -57,19 +57,38 @@ struct ItemDetailView: View {
         // Reading store.profile makes the view refresh after buy.
         let _ = store.profile
 
-        if !store.isUnlocked(item) {
+        if !store.isUnlocked(item) || (item.isLevelLocked && !store.isOwned(item)) {
             Text("Débloqué au niveau \(item.unlockLevel ?? 0)")
                 .font(KFont.body(13))
                 .foregroundStyle(Theme.muted)
         } else if store.isEquipped(item) {
-            EquippedLabel()
+            VStack(spacing: 8) {
+                EquippedLabel()
+                Button { store.unequip(slot: item.slot) } label: {
+                    Text("Retirer")
+                        .font(KFont.mono(12)).tracking(1)
+                        .foregroundStyle(Theme.muted)
+                }
+                .buttonStyle(.plain)
+            }
         } else if store.isOwned(item) {
             PixelButton(title: "Équiper") { store.equip(item) }
         } else {
-            HStack {
-                CoinLabel(amount: item.price)
-                Spacer()
-                PixelButton(title: "Acheter", fullWidth: false) { store.buy(item) }
+            // Sans le `.disabled`, un joueur trop pauvre tape « Acheter » en boucle
+            // sans que rien ne se passe et sans savoir pourquoi.
+            let missing = item.price - store.profile.coins
+            VStack(spacing: 8) {
+                HStack {
+                    CoinLabel(amount: item.price)
+                    Spacer()
+                    PixelButton(title: "Acheter", fullWidth: false) { store.buy(item) }
+                        .disabled(missing > 0)
+                }
+                if missing > 0 {
+                    Text("Il te manque \(missing) pièces")
+                        .font(KFont.body(12))
+                        .foregroundStyle(Theme.muted)
+                }
             }
         }
     }

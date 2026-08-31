@@ -24,16 +24,25 @@ struct RootView: View {
             // No-op tant que Supabase n'est pas configuré -> l'app reste hors-ligne.
             .task {
                 await SupabaseService.shared.start()
-                await SupabaseService.shared.syncProfile(store.profile)
+                await SupabaseService.shared.syncProfile(store.profile, accent: store.accent.rawValue)
+                // Réplique l'équipement de l'avatar pour que le perso soit visible par
+                // les autres joueurs (profil public depuis le classement).
+                await SupabaseService.shared.syncEquipped(store.profile.equipped)
                 // Renvoie tout défi terminé qui n'a pas pu partir lors d'une session
                 // précédente (hors ligne / raté réseau), pour ne perdre aucun score.
                 await SupabaseService.shared.flushPendingDaily()
             }
             .onChange(of: store.profile.gamesPlayed) {
-                Task { await SupabaseService.shared.syncProfile(store.profile) }
+                Task { await SupabaseService.shared.syncProfile(store.profile, accent: store.accent.rawValue) }
             }
             .onChange(of: store.profile.pseudo) {
-                Task { await SupabaseService.shared.syncProfile(store.profile) }
+                Task { await SupabaseService.shared.syncProfile(store.profile, accent: store.accent.rawValue) }
+            }
+            .onChange(of: store.accent) {
+                Task { await SupabaseService.shared.syncProfile(store.profile, accent: store.accent.rawValue) }
+            }
+            .onChange(of: store.profile.equipped) {
+                Task { await SupabaseService.shared.syncEquipped(store.profile.equipped) }
             }
             .fullScreenCover(item: Bindable(router).activeGame) { game in
                 GamePlayView(game: game)
@@ -151,6 +160,8 @@ struct RouteView: View {
         case .admin: AdminView()
         case .duelEntry: DuelEntryView()
         case .rankedLeaderboard: RankedLeaderboardView()
+        case .playerProfile(let id): PlayerProfileView(userID: id)
+        case .themeStats: ThemeStatsView()
         }
     }
 }

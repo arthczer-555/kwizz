@@ -16,6 +16,9 @@ enum Route: Hashable {
     case admin
     case duelEntry
     case rankedLeaderboard
+    case playerProfile(userID: String)
+    /// Réussite par thème du joueur local (% de bonnes réponses).
+    case themeStats
 }
 
 @MainActor
@@ -40,9 +43,11 @@ final class Router {
 
     // MARK: Online duel
 
-    /// Creates a room as the host and connects. The lobby reads `activeDuel`.
-    func createDuel() {
-        let duel = DuelController(store: store, router: self, role: .host, roomCode: RoomCode.generate())
+    /// Creates a room as the host and connects, with the settings picked on the
+    /// setup screen (stake and scoring rule). The lobby reads `activeDuel`.
+    func createDuel(settings: DuelSettings) {
+        let duel = DuelController(store: store, router: self, role: .host,
+                                  roomCode: RoomCode.generate(), settings: settings)
         activeDuel = duel
         duel.connect()
     }

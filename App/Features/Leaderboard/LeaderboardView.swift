@@ -97,23 +97,29 @@ struct LeaderboardView: View {
 
     private func row(_ e: SupabaseService.MonthlyEntry) -> some View {
         let isMe = e.user_id == SupabaseService.shared.userID
-        return HStack(spacing: 12) {
-            Text("\(e.rank)")
-                .font(KFont.mono(13, bold: true))
-                .foregroundStyle(e.rank <= 3 ? accent : Theme.muted)
-                .frame(minWidth: 32, alignment: .leading)
-            Text(e.pseudo)
-                .font(KFont.mono(13, bold: isMe))
-                .lineLimit(1)
-            Spacer()
-            Text("\(e.total)")
-                .font(KFont.mono(13, bold: true))
-                .foregroundStyle(isMe ? accent : Theme.text)
+        return NavigationLink(value: Route.playerProfile(userID: e.user_id)) {
+            HStack(spacing: 12) {
+                Text("\(e.rank)")
+                    .font(KFont.mono(13, bold: true))
+                    .foregroundStyle(e.rank <= 3 ? accent : Theme.muted)
+                    .frame(minWidth: 32, alignment: .leading)
+                Text(e.pseudo)
+                    .font(KFont.mono(13, bold: isMe))
+                    .lineLimit(1)
+                Spacer()
+                Text("\(e.total)")
+                    .font(KFont.mono(13, bold: true))
+                    .foregroundStyle(isMe ? accent : Theme.text)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(isMe ? accent.opacity(0.12) : Theme.surface)
+            .overlay(Rectangle().stroke(isMe ? accent : Theme.border, lineWidth: 1))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(isMe ? accent.opacity(0.12) : Theme.surface)
-        .overlay(Rectangle().stroke(isMe ? accent : Theme.border, lineWidth: 1))
+        .buttonStyle(.plain)
     }
 
     private func panel(icon: String, title: String, message: String) -> some View {

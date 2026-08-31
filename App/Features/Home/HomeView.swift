@@ -6,109 +6,263 @@ struct HomeView: View {
     @Environment(\.accent) private var accent
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                TopBar(coins: store.profile.coins, level: store.profile.level)
-
-                // Hero: avatar + identity
-                VStack(spacing: 10) {
-                    NavigationLink(value: Route.avatar) {
-                        AvatarLayeredView(look: store.avatarLook, scale: 1.3)
-                    }
-                    .buttonStyle(.plain)
-
-                    Text(store.profile.pseudo)
-                        .font(KFont.mono(18, bold: true))
-                        .foregroundStyle(Theme.text)
-                }
-                .padding(.top, 4)
-
-                // XP block
-                VStack(spacing: 6) {
-                    HStack {
-                        SectionLabel("LVL \(store.profile.level)")
-                        Spacer()
-                        SectionLabel(
-                            store.profile.levelProgress.isMax
-                                ? "MAX"
-                                : "\(store.profile.levelProgress.xpIntoLevel) / \(store.profile.levelProgress.xpForNextLevel) XP"
-                        )
-                    }
-                    XPBar(fraction: store.profile.levelProgress.fraction)
-                }
-                .padding(.top, 8)
-
-                // Play
-                PixelButton(title: "Jouer") { router.goToPlay() }
-
-                // Daily challenge panel
-                NavigationLink(value: Route.defiIntro) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 3) {
-                            SectionLabel("Défi du jour")
-                            Text(store.dailyAvailable ? "1 essai restant" : "déjà joué")
-                                .font(KFont.body(12))
-                                .foregroundStyle(Theme.muted)
-                        }
-                        Spacer()
-                        CoinLabel(amount: Economy.defiReward(errors: 0))
-                    }
-                    .kPanel()
-                }
-                .buttonStyle(.plain)
-
-                // Récompenses : coffres + roue
-                HStack(spacing: 10) {
-                    NavigationLink(value: Route.chestOpen) {
-                        rewardTile(icon: "shippingbox.fill", title: "Coffres", value: "\(store.profile.ownedChests)")
-                    }
-                    .buttonStyle(.plain)
-                    NavigationLink(value: Route.dailyWheel) {
-                        rewardTile(icon: "circle.hexagongrid.fill", title: "Roue",
-                                   value: store.wheelAvailable ? "1 tour" : "demain")
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                // Série en cours
-                HStack(spacing: 6) {
-                    Image(systemName: "flame.fill").font(.system(size: 12)).foregroundStyle(accent)
-                    Text("Série J\(store.profile.dailyStreak)")
-                        .font(KFont.mono(11)).foregroundStyle(Theme.text)
-                    Spacer()
-                    Text(store.profile.dailyStreak > 0
-                            ? "prochain palier J\(StreakMilestone.next(after: store.profile.dailyStreak))"
-                            : "joue chaque jour")
-                        .font(KFont.mono(10)).foregroundStyle(Theme.muted)
-                }
-                .padding(.horizontal, 2)
-
-                // Premier cosmétique
-                if store.showFirstCosmeticNudge {
-                    FirstCosmeticNudge {
-                        store.dismissFirstCosmeticNudge()
-                        router.tab = .shop
-                    }
-                }
-            }
-            .screenPadding()
-            .padding(.vertical, 16)
+        // Tout doit tenir sans scroll, du SE au Pro Max : on propose plusieurs
+        // versions du même écran (avatar + espacements de plus en plus serrés)
+        // et SwiftUI garde la première qui rentre dans la hauteur disponible.
+        // Les variantes sont listées une à une : un `ForEach` ne compterait que
+        // pour un seul candidat et ViewThatFits ne testerait rien. La dernière
+        // sert de filet (retenue même si elle déborde), d'où la plus serrée.
+        ViewThatFits(in: .vertical) {
+            content(avatarScale: 1.30, gap: 16)
+            content(avatarScale: 1.15, gap: 14)
+            content(avatarScale: 1.00, gap: 12)
+            content(avatarScale: 0.85, gap: 10)
+            content(avatarScale: 0.70, gap: 8)
+            content(avatarScale: 0.58, gap: 6)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .screenBackground()
     }
 
-    @ViewBuilder private func rewardTile(icon: String, title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+    @ViewBuilder
+    private func content(avatarScale: CGFloat, gap: CGFloat) -> some View {
+        VStack(spacing: gap) {
+            TopBar(coins: store.profile.coins, level: store.profile.level)
+
+            Spacer(minLength: 0)
+
+            // Hero: avatar + identity
+            VStack(spacing: gap * 0.6) {
+                NavigationLink(value: Route.avatar) {
+                    AvatarLayeredView(look: store.avatarLook, scale: avatarScale)
+                }
+                .buttonStyle(.plain)
+
+                Text(store.profile.pseudo)
+                    .font(KFont.mono(18, bold: true))
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+
+            // XP block
+            VStack(spacing: 6) {
+                HStack {
+                    SectionLabel("LVL \(store.profile.level)")
+                    Spacer()
+                    SectionLabel(
+                        store.profile.levelProgress.isMax
+                            ? "MAX"
+                            : "\(store.profile.levelProgress.xpIntoLevel) / \(store.profile.levelProgress.xpForNextLevel) XP"
+                    )
+                }
+                XPBar(fraction: store.profile.levelProgress.fraction)
+            }
+
+            Spacer(minLength: 0)
+
+            // Play
+            PixelButton(title: "Jouer") { router.goToPlay() }
+
+            // Rendez-vous du jour. Le compte à rebours vers minuit remplace un
+            // « demain » qui ne dit pas quand : seul ce bloc se rafraîchit à la
+            // seconde, le reste de l'écran ne redessine pas.
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                VStack(spacing: gap * 0.65) {
+                    dailyCard(now: context.date)
+                    HStack(spacing: 10) {
+                        NavigationLink(value: Route.chestOpen) { chestTile }
+                            .buttonStyle(.plain)
+                        NavigationLink(value: Route.dailyWheel) { wheelTile(now: context.date) }
+                            .buttonStyle(.plain)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            // Série en cours
             HStack(spacing: 6) {
-                Image(systemName: icon).font(.system(size: 13)).foregroundStyle(accent)
+                Image(systemName: "flame.fill").font(.system(size: 12)).foregroundStyle(accent)
+                Text("Série J\(store.profile.dailyStreak)")
+                    .font(KFont.mono(11)).foregroundStyle(Theme.text)
+                Spacer()
+                Text(store.profile.dailyStreak > 0
+                        ? "prochain palier J\(StreakMilestone.next(after: store.profile.dailyStreak))"
+                        : "joue chaque jour")
+                    .font(KFont.mono(10)).foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 2)
+        }
+        .screenPadding()
+        .padding(.vertical, gap)
+    }
+
+    // MARK: - Défi du jour
+
+    @ViewBuilder private func dailyCard(now: Date) -> some View {
+        let available = store.dailyAvailable
+        NavigationLink(value: Route.defiIntro) {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack {
+                    SectionLabel("Défi du jour")
+                    Spacer()
+                    KTag(title: available ? "1 essai" : "✓ fait", selected: available)
+                }
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        CoinLabel(amount: available ? Economy.defiReward(errors: 0)
+                                                    : store.profile.lastDailyReward,
+                                  color: available ? nil : Theme.muted,
+                                  size: 16)
+                        Text(available
+                                ? "pour \(DailyChallenge.questionCount) bonnes réponses"
+                                : dailyDoneSubtitle(now: now))
+                            .font(KFont.body(12))
+                            .foregroundStyle(Theme.muted)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    Spacer(minLength: 8)
+                    MiniAction(title: available ? "Jouer" : "Détail", filled: available)
+                }
+            }
+            .actionPanel(active: available)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// « 9/10, retour dans 07:42:11 ». Sans score enregistré (app tuée pendant le
+    /// défi), on le dit plutôt que d'afficher un faux 0/10.
+    private func dailyDoneSubtitle(now: Date) -> String {
+        let correct = store.profile.lastDailyCorrect
+        let prefix = correct >= 0 ? "\(correct)/\(DailyChallenge.questionCount)" : "tentative perdue"
+        return "\(prefix), retour dans \(Self.timeUntilMidnight(from: now))"
+    }
+
+    // MARK: - Coffres & roue
+
+    private var chestTile: some View {
+        let count = store.profile.ownedChests
+        return rewardTile(
+            icon: "shippingbox.fill",
+            title: "Coffres",
+            value: count == 0 ? "Aucun" : (count == 1 ? "1 prêt" : "\(count) prêts"),
+            // La chance de coffre monte avec le score (rien en dessous de 60 % de
+            // réussite), donc on invite à bien jouer, pas à enchaîner les parties.
+            action: count > 0 ? "Ouvrir" : "Gagne-les en jouant",
+            active: count > 0
+        )
+    }
+
+    private func wheelTile(now: Date) -> some View {
+        let available = store.wheelAvailable
+        return rewardTile(
+            icon: "circle.hexagongrid.fill",
+            title: "Roue",
+            value: available ? "1 tour" : "Fait",
+            action: available ? "Tourner" : "Retour \(Self.timeUntilMidnight(from: now))",
+            active: available
+        )
+    }
+
+    @ViewBuilder private func rewardTile(icon: String, title: String, value: String,
+                                         action: String, active: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(active ? accent : Theme.muted)
                 SectionLabel(title)
                 Spacer()
             }
-            Text(value).font(KFont.mono(15, bold: true)).foregroundStyle(Theme.text)
+            Text(value)
+                .font(KFont.mono(active ? 15 : 13, bold: active))
+                .foregroundStyle(active ? Theme.text : Theme.muted)
+            Spacer(minLength: 4)
+            // Ligne d'action : c'est elle qui dit que la tuile est un bouton.
+            VStack(spacing: 7) {
+                Rectangle()
+                    .fill(active ? accent : Theme.faint)
+                    .frame(height: 1)
+                HStack(spacing: 4) {
+                    Text(action.uppercased())
+                        .font(KFont.mono(9)).tracking(1.2)
+                        .foregroundStyle(active ? accent : Theme.muted)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                    Spacer(minLength: 2)
+                    if active {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(accent)
+                    }
+                }
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .kPanel(12)
     }
+
+    /// Temps restant avant la remise à zéro quotidienne (minuit local).
+    static func timeUntilMidnight(from now: Date) -> String {
+        let cal = Calendar.current
+        guard let midnight = cal.nextDate(after: now,
+                                          matching: DateComponents(hour: 0, minute: 0, second: 0),
+                                          matchingPolicy: .nextTime) else { return "00:00:00" }
+        let seconds = max(0, Int(midnight.timeIntervalSince(now)))
+        return String(format: "%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+    }
+}
+
+// MARK: - Pièces d'accueil
+
+/// Petit bouton logé dans une carte : assez visible pour dire « ça se tape »,
+/// assez discret pour ne pas concurrencer le bouton Jouer plein écran.
+private struct MiniAction: View {
+    let title: String
+    var filled: Bool = true
+    @Environment(\.accent) private var accent
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title.uppercased())
+                .font(KFont.mono(10, bold: filled))
+                .tracking(1.5)
+            if filled {
+                Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold))
+            }
+        }
+        .foregroundStyle(filled ? Theme.accentInk : Theme.muted)
+        .padding(.vertical, 9)
+        .padding(.horizontal, 12)
+        .background(filled ? accent : Color.clear)
+        .overlay(Rectangle().stroke(filled ? accent : Theme.faint, lineWidth: 1))
+    }
+}
+
+/// Panneau d'action : un `kPanel` doublé d'une barre d'accent à gauche, qui
+/// s'éteint quand il n'y a plus rien à faire aujourd'hui.
+private struct ActionPanel: ViewModifier {
+    let active: Bool
+    @Environment(\.accent) private var accent
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.vertical, 12)
+            .padding(.horizontal, 13)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.surface)
+            .overlay(Rectangle().stroke(Theme.border, lineWidth: 1))
+            .overlay(alignment: .leading) {
+                Rectangle()
+                    .fill(active ? accent : Theme.faint)
+                    .frame(width: 3)
+            }
+    }
+}
+
+private extension View {
+    func actionPanel(active: Bool) -> some View { modifier(ActionPanel(active: active)) }
 }
 
 #Preview {

@@ -115,11 +115,11 @@ final class SupabaseService {
     /// Upserts the local profile into `profiles`. RLS allows a user to write only
     /// its own row (`auth.uid() = id`), which the anonymous session satisfies.
     /// A failed sync never disrupts play; it only flips `status` to `.failed`.
-    func syncProfile(_ profile: PlayerProfile) async {
+    func syncProfile(_ profile: PlayerProfile, accent: String) async {
         #if canImport(Supabase)
         guard case .online = status, let client, let id = userID else { return }
         do {
-            try await client.from("profiles").upsert(ProfileRow(id: id, profile: profile)).execute()
+            try await client.from("profiles").upsert(ProfileRow(id: id, profile: profile, accent: accent)).execute()
         } catch {
             // Le pseudo est UNIQUE en base : si le joueur a gardé en local un pseudo
             // entre-temps pris par quelqu'un d'autre, l'upsert entier échoue et ses
@@ -127,13 +127,70 @@ final class SupabaseService {
             // pseudo (le serveur fait foi pour ce champ ; c'est claim_pseudo qui le
             // change, avec un vrai message d'erreur côté UI).
             try? await client.from("profiles")
-                .update(ProfileStatsRow(profile: profile))
+                .update(ProfileStatsRow(profile: profile, accent: accent))
                 .eq("id", value: id)
                 .execute()
             // Non-fatal: a failed write must NOT flip the app to "offline" (status
             // reflects the auth session, not the last operation). The leaderboard
             // and ranked screens gate their UI on `status`, so keep it as-is.
         }
+        #endif
+    }
+
+    /// Réplique l'équipement de l'avatar (PlayerProfile.equipped : [slot : item_id])
+    /// dans `equipped_items`, pour que le perso du joueur soit reconstituable par les
+    /// autres (profil public). On remplace intégralement les lignes du joueur : delete
+    /// de tout son équipement puis insert du map courant. Non-fatal (ne bascule pas
+    /// l'app hors ligne en cas d'échec) et no-op hors ligne.
+    func syncEquipped(_ equipped: [String: String]) async {
+        #if canImport(Supabase)
+        guard case .online = status, let client, let id = userID else { return }
+        struct EquippedRow: Encodable { let user_id: String; let slot: String; let item_id: String }
+        let rows = equipped.map { EquippedRow(user_id: id, slot: $0.key, item_id: $0.value) }
+        do {
+            try await client.from("equipped_items").delete().eq("user_id", value: id).execute()
+            if !rows.isEmpty {
+                try await client.from("equipped_items").insert(rows).execute()
+            }
+        } catch {
+            // Non-fatal : idem syncProfile, l'état online reflète la session, pas l'écriture.
+        }
+        #endif
+    }
+
+    /// Profil public d'un autre joueur (RPC `get_public_profile`) : les seuls champs
+    /// exposés hors du propriétaire (le RLS reste fermé sur les tables de base).
+    /// Sert à afficher, depuis le classement, le profil d'un joueur avec ses scores
+    /// et son perso (avatar reconstruit depuis `equipped` + accent + niveau via XP).
+    struct PublicProfile: Decodable, Sendable {
+        struct Equipped: Decodable, Sendable { let slot: String; let item_id: String }
+        let user_id: String
+        let pseudo: String
+        let total_xp: Int
+        let accent: String?
+        let games_played: Int
+        let total_correct: Int
+        let total_answered: Int
+        let best_streak_ever: Int
+        let best_score: Int
+        let equipped: [Equipped]
+    }
+
+    /// Charge le profil public de `userID`. Renvoie `nil` hors ligne ou en cas d'échec
+    /// (l'appelant affiche alors un panneau "indisponible").
+    func publicProfile(userID: String) async -> PublicProfile? {
+        #if canImport(Supabase)
+        guard case .online = status, let client else { return nil }
+        struct Params: Encodable { let p_user_id: String }
+        do {
+            return try await client
+                .rpc("get_public_profile", params: Params(p_user_id: userID))
+                .execute().value
+        } catch {
+            return nil
+        }
+        #else
+        return nil
         #endif
     }
 
@@ -572,8 +629,9 @@ private struct ProfileRow: Encodable {
     let total_answered: Int
     let best_streak_ever: Int
     let daily_streak: Int
+    let accent: String
 
-    init(id: String, profile: PlayerProfile) {
+    init(id: String, profile: PlayerProfile, accent: String) {
         self.id = id
         self.pseudo = Self.clampPseudo(profile.pseudo)
         self.total_xp = max(0, profile.totalXP)
@@ -583,6 +641,7 @@ private struct ProfileRow: Encodable {
         self.total_correct = min(max(0, profile.totalCorrect), max(0, profile.totalAnswered))
         self.best_streak_ever = max(0, profile.bestStreakEver)
         self.daily_streak = max(0, profile.dailyStreak)
+        self.accent = accent
     }
 
     private static func clampPseudo(_ raw: String) -> String {
@@ -603,8 +662,9 @@ private struct ProfileStatsRow: Encodable {
     let total_answered: Int
     let best_streak_ever: Int
     let daily_streak: Int
+    let accent: String
 
-    init(profile: PlayerProfile) {
+    init(profile: PlayerProfile, accent: String) {
         self.total_xp = max(0, profile.totalXP)
         self.coins = max(0, profile.coins)
         self.games_played = max(0, profile.gamesPlayed)
@@ -612,6 +672,7 @@ private struct ProfileStatsRow: Encodable {
         self.total_correct = min(max(0, profile.totalCorrect), max(0, profile.totalAnswered))
         self.best_streak_ever = max(0, profile.bestStreakEver)
         self.daily_streak = max(0, profile.dailyStreak)
+        self.accent = accent
     }
 }
 #endif

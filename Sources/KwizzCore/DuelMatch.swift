@@ -40,7 +40,11 @@ public struct DuelMatch: Sendable {
     }
 
     public static let minPlayers = 2
-    public static let maxPlayers = 6
+    public static let maxPlayers = 16
+    /// Au-delà de ce nombre, les écrans passent en présentation compacte (grille
+    /// à deux colonnes dans le salon, classement tronqué en cours de partie) :
+    /// une liste pleine largeur de 16 lignes ne tient nulle part.
+    public static let compactRosterThreshold = 6
     public static let pointForWin = 1
 
     public let roomCode: String
@@ -57,8 +61,15 @@ public struct DuelMatch: Sendable {
     public private(set) var winners: [Int: String]
     /// points[clientID] = questions won.
     public private(set) var points: [String: Int]
+    /// Les réglages annoncés par l'hôte (mise + règle de score). nil tant qu'un
+    /// invité ne les a pas reçus : on ne peut ni afficher un montant ni refuser
+    /// l'entrée avant de les connaître.
+    public private(set) var announcedSettings: DuelSettings?
+    /// Nombre de joueurs présents au lancement : la cagnotte est figée là, un
+    /// départ en cours de manche ne la rétrécit pas.
+    public private(set) var stakedPlayerCount: Int = 0
 
-    public init(roomCode: String, localClientID: String, host: DuelPlayer) {
+    public init(roomCode: String, localClientID: String, host: DuelPlayer, settings: DuelSettings? = nil) {
         self.roomCode = roomCode
         self.localClientID = localClientID
         self.hostClientID = host.clientID
@@ -69,6 +80,7 @@ public struct DuelMatch: Sendable {
         self.answers = [:]
         self.winners = [:]
         self.points = [:]
+        self.announcedSettings = settings
     }
 
     // MARK: Derived
@@ -77,6 +89,36 @@ public struct DuelMatch: Sendable {
     public var isFull: Bool { players.count >= Self.maxPlayers }
     public var canStart: Bool { isHost && phase == .lobby && players.count >= Self.minPlayers }
     public var totalQuestions: Int { questions.count }
+
+    /// Les réglages effectifs, en retombant sur les valeurs par défaut tant que
+    /// l'hôte ne les a pas annoncés (l'UI se fie à `settingsKnown` avant d'afficher
+    /// un montant).
+    public var settings: DuelSettings { announcedSettings ?? .default }
+    /// La mise en pièces que chaque joueur paie pour entrer.
+    public var stake: Int { settings.stake }
+    /// La règle de score de la partie.
+    public var scoring: DuelScoring { settings.scoring }
+
+    /// Le thème des questions annoncé par l'hôte (`Category.melange.id` = tous).
+    public var categoryID: String { settings.categoryID }
+    /// Vrai dès que les réglages de la partie sont connus de ce client.
+    public var settingsKnown: Bool { announcedSettings != nil }
+    /// La longueur annoncée de la manche. Avant le lancement c'est la seule
+    /// source (les questions n'existent pas encore) ; une fois lancée,
+    /// `totalQuestions` fait foi.
+    public var plannedQuestionCount: Int { settings.questionCount }
+    /// La cagnotte : ce que le vainqueur rafle. Dans le salon elle suit le nombre
+    /// de joueurs présents, une fois la manche lancée elle est figée.
+    public var pot: Int { stake * max(stakedPlayerCount, players.count, 1) }
+
+    /// Le règlement de fin de partie : mise, joueurs ayant misé, et nombre de
+    /// premiers ex æquo qui se partagent la cagnotte.
+    public var finalWager: DuelWager {
+        let winners = scoreboard.filter { $0.rank == 1 }.count
+        return DuelWager(stake: stake,
+                         playerCount: max(stakedPlayerCount, 1),
+                         winnerCount: max(winners, 1))
+    }
 
     /// The question currently being answered or revealed, if any.
     public var currentIndex: Int? {
@@ -92,6 +134,9 @@ public struct DuelMatch: Sendable {
 
     public func player(id: String) -> DuelPlayer? { players.first { $0.clientID == id } }
 
+    /// Vrai quand la salle est trop peuplée pour un affichage ligne par ligne.
+    public var needsCompactRoster: Bool { players.count > Self.compactRosterThreshold }
+
     /// The player's answer to a given question, if recorded.
     public func answer(of clientID: String, at index: Int) -> DuelAnswer? {
         answers[index]?[clientID]
@@ -100,6 +145,16 @@ public struct DuelMatch: Sendable {
     /// Total correct answers a player has given across the round.
     public func correctCount(of clientID: String) -> Int {
         answers.values.reduce(0) { $0 + (($1[clientID]?.correct == true) ? 1 : 0) }
+    }
+
+    /// Temps cumulé des bonnes réponses (ms). Départage un classement où tout le
+    /// monde marque : à points et bonnes réponses égaux, le plus rapide sur la
+    /// manche passe devant, plutôt qu'un tri alphabétique arbitraire.
+    public func totalCorrectMs(of clientID: String) -> Int {
+        answers.values.reduce(0) { total, round in
+            guard let answer = round[clientID], answer.correct else { return total }
+            return total + answer.elapsedMs
+        }
     }
 
     /// Live scoreboard (during play) and final podium (when finished): ordered best
@@ -111,6 +166,8 @@ public struct DuelMatch: Sendable {
             if pa != pb { return pa > pb }
             let ca = correctCount(of: a.clientID), cb = correctCount(of: b.clientID)
             if ca != cb { return ca > cb }
+            let ta = totalCorrectMs(of: a.clientID), tb = totalCorrectMs(of: b.clientID)
+            if ta != tb { return ta < tb }
             return a.pseudo < b.pseudo
         }
         return ordered.map { p in
@@ -122,12 +179,33 @@ public struct DuelMatch: Sendable {
         }
     }
 
+    /// Les `limit` meilleurs du classement, en garantissant la présence du joueur
+    /// donné : s'il n'est pas dans la tranche, il remplace le dernier affiché. Sert
+    /// au tableau de bord en cours de partie, qui ne peut pas tenir 16 lignes sans
+    /// pousser la question hors de l'écran.
+    public func topScores(limit: Int, alwaysInclude clientID: String) -> [DuelScore] {
+        let board = scoreboard
+        guard limit > 0, board.count > limit else { return board }
+        var top = Array(board.prefix(limit))
+        if !top.contains(where: { $0.player.clientID == clientID }),
+           let mine = board.first(where: { $0.player.clientID == clientID }) {
+            top[top.count - 1] = mine
+        }
+        return top
+    }
+
     // MARK: Presence (driven by the app's Realtime layer)
 
     /// Records who the host is, once a guest discovers it from the presence roster.
     public mutating func setHost(_ clientID: String) {
         guard phase == .lobby else { return }
         hostClientID = clientID
+    }
+
+    /// Enregistre les réglages décidés par l'hôte. Verrouillés dès le lancement.
+    public mutating func setSettings(_ value: DuelSettings) {
+        guard phase == .lobby else { return }
+        announcedSettings = value
     }
 
     public mutating func playerJoined(_ p: DuelPlayer) {
@@ -147,6 +225,8 @@ public struct DuelMatch: Sendable {
         switch event {
         case .hello(let p):
             playerJoined(p)
+        case .settings(let value):
+            setSettings(value)
         case .start(let questions, let roundID):
             beginRound(questions: questions, roundID: roundID)
         case .beginQuestion(let index):
@@ -157,6 +237,8 @@ public struct DuelMatch: Sendable {
             applyReveal(index: index, snapshot: snapshot, winner: winner)
         case .finish:
             finishMatch()
+        case .rematch:
+            resetForRematch()
         }
     }
 
@@ -169,6 +251,7 @@ public struct DuelMatch: Sendable {
         self.answers = [:]
         self.winners = [:]
         self.points = Dictionary(uniqueKeysWithValues: players.map { ($0.clientID, 0) })
+        self.stakedPlayerCount = players.count
         self.phase = .countdown
     }
 
@@ -197,16 +280,34 @@ public struct DuelMatch: Sendable {
     public mutating func applyReveal(index: Int, snapshot: [String: DuelAnswer], winner: String?) {
         guard case .question(let cur) = phase, cur == index else { return }
         answers[index] = snapshot
-        if let winner {
-            winners[index] = winner
-            points[winner, default: 0] += Self.pointForWin
+        // La couronne va toujours à la bonne réponse la plus rapide ; ce sont les
+        // points qui dépendent de la règle choisie par l'hôte.
+        if let winner { winners[index] = winner }
+        for (clientID, answer) in snapshot where answer.correct {
+            points[clientID, default: 0] += scoring.pointsPerCorrect
         }
+        if let winner { points[winner, default: 0] += scoring.speedBonus }
         phase = .reveal(index: index)
     }
 
     public mutating func finishMatch() {
         guard phase != .finished else { return }
         phase = .finished
+    }
+
+    /// Renvoie la salle au salon pour une revanche : mêmes joueurs, même code,
+    /// mêmes réglages, et tout ce qui appartenait à la manche écoulée est effacé.
+    /// `stakedPlayerCount` retombe à zéro : entre deux manches plus personne n'a
+    /// misé, quitter le salon ne doit donc plus rien coûter.
+    public mutating func resetForRematch() {
+        guard phase == .finished else { return }
+        questions = []
+        roundID = ""
+        answers = [:]
+        winners = [:]
+        points = [:]
+        stakedPlayerCount = 0
+        phase = .lobby
     }
 
     // MARK: Host-side helpers (used to decide a question's outcome)

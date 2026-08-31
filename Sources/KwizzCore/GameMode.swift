@@ -30,7 +30,7 @@ public enum GameMode: String, CaseIterable, Codable, Sendable, Identifiable {
         case .classique: "15 questions, max de bonnes réponses"
         case .contreLaMontre: "max de bonnes en 60s"
         case .survie: "jusqu'à la 1re erreur"
-        case .duel: "2 à 6 joueurs en ligne"
+        case .duel: "2 à 16 joueurs, mise et cagnotte"
         case .defi: "grille du jour, 1 essai, classement mensuel"
         case .entrainement: "ton thème, ta difficulté"
         }
@@ -78,6 +78,11 @@ public enum GameMode: String, CaseIterable, Codable, Sendable, Identifiable {
     /// independent of the difficulty.
     public static let timePerQuestion: Double = 15
 
+    /// Seconds a duel keeps a question's reveal on screen before opening the next
+    /// one. Vit ici parce que la longueur d'une manche s'estime avec (le salon
+    /// annonce une durée avant même qu'un `DuelController` existe).
+    public static let duelRevealSeconds: Double = 3.5
+
     /// Whether each question has its own countdown (and therefore a speed bonus).
     /// Entraînement is free practice, so it has no time pressure at all.
     public var hasPerQuestionTimer: Bool {
@@ -98,6 +103,11 @@ public enum GameMode: String, CaseIterable, Codable, Sendable, Identifiable {
     /// Whether the mode contributes to the personal best-score records.
     /// Training modes are free practice, so they do not.
     public var tracksRecord: Bool { !isTraining }
+
+    /// Whether the mode's record counts questions instead of points. Survie is
+    /// open-ended and stops at the first mistake, so "12 questions d'affilée" is a
+    /// far more readable record than a four-digit score.
+    public var recordsQuestionCount: Bool { self == .survie }
 
     /// Modes that are not yet playable and show an "à suivre" badge instead of
     /// being tappable. Nothing is gated now that the online duel ships.

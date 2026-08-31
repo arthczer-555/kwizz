@@ -24,9 +24,17 @@ public struct PlayerProfile: Codable, Sendable {
     public var totalCorrect: Int
     public var totalAnswered: Int
     public var bestStreakEver: Int
+    /// Réussite cumulée par thème (clé = `Question.categoryID`), alimentée par
+    /// chaque manche appliquée. Sert la page « score par thème ».
+    public var themeStats: [String: ThemeStat]
     public var dailyStreak: Int
     public var lastPlayedDay: Int
     public var lastDailyDay: Int
+    /// Bonnes réponses du dernier défi joué, ou -1 si la tentative a été perdue
+    /// sans partie terminée. Sert à rappeler le résultat du jour sur l'accueil.
+    public var lastDailyCorrect: Int
+    /// Pièces gagnées lors de ce même défi.
+    public var lastDailyReward: Int
     public var trainingCoinsDay: Int
     public var trainingCoinsToday: Int
     /// Duels won and total duels played (used for the "X/Y gagnés" profile stat).
@@ -66,9 +74,12 @@ public struct PlayerProfile: Codable, Sendable {
         self.totalCorrect = 0
         self.totalAnswered = 0
         self.bestStreakEver = 0
+        self.themeStats = [:]
         self.dailyStreak = 0
         self.lastPlayedDay = 0
         self.lastDailyDay = 0
+        self.lastDailyCorrect = -1
+        self.lastDailyReward = 0
         self.trainingCoinsDay = 0
         self.trainingCoinsToday = 0
         self.duelWins = 0
@@ -92,8 +103,9 @@ public struct PlayerProfile: Codable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case pseudo, totalXP, coins, ownedItemIDs, equipped, bestScores
-        case gamesPlayed, totalCorrect, totalAnswered, bestStreakEver
+        case gamesPlayed, totalCorrect, totalAnswered, bestStreakEver, themeStats
         case dailyStreak, lastPlayedDay, lastDailyDay, trainingCoinsDay, trainingCoinsToday
+        case lastDailyCorrect, lastDailyReward
         case duelWins, duelGames, defiCompletedCount
         case soundOn, musicOn, notificationsOn
         case ownedChests, chestOpenCount, lastWheelDay
@@ -110,14 +122,17 @@ public struct PlayerProfile: Codable, Sendable {
         coins = try c.decodeIfPresent(Int.self, forKey: .coins) ?? 0
         ownedItemIDs = try c.decodeIfPresent(Set<String>.self, forKey: .ownedItemIDs) ?? []
         equipped = try c.decodeIfPresent([String: String].self, forKey: .equipped) ?? [:]
-        bestScores = try c.decodeIfPresent([String: Int].self, forKey: .bestScores) ?? [:]
+        bestScores = Self.migratedRecords(try c.decodeIfPresent([String: Int].self, forKey: .bestScores) ?? [:])
         gamesPlayed = try c.decodeIfPresent(Int.self, forKey: .gamesPlayed) ?? 0
         totalCorrect = try c.decodeIfPresent(Int.self, forKey: .totalCorrect) ?? 0
         totalAnswered = try c.decodeIfPresent(Int.self, forKey: .totalAnswered) ?? 0
         bestStreakEver = try c.decodeIfPresent(Int.self, forKey: .bestStreakEver) ?? 0
+        themeStats = try c.decodeIfPresent([String: ThemeStat].self, forKey: .themeStats) ?? [:]
         dailyStreak = try c.decodeIfPresent(Int.self, forKey: .dailyStreak) ?? 0
         lastPlayedDay = try c.decodeIfPresent(Int.self, forKey: .lastPlayedDay) ?? 0
         lastDailyDay = try c.decodeIfPresent(Int.self, forKey: .lastDailyDay) ?? 0
+        lastDailyCorrect = try c.decodeIfPresent(Int.self, forKey: .lastDailyCorrect) ?? -1
+        lastDailyReward = try c.decodeIfPresent(Int.self, forKey: .lastDailyReward) ?? 0
         trainingCoinsDay = try c.decodeIfPresent(Int.self, forKey: .trainingCoinsDay) ?? 0
         trainingCoinsToday = try c.decodeIfPresent(Int.self, forKey: .trainingCoinsToday) ?? 0
         duelWins = try c.decodeIfPresent(Int.self, forKey: .duelWins) ?? 0
@@ -150,11 +165,30 @@ public struct PlayerProfile: Codable, Sendable {
     /// the level (driven by XP, i.e. how *much* you play), this reflects how *well*
     /// you play: it only moves when you beat a personal best.
     public var skillScore: Int {
-        GameMode.allCases.filter(\.tracksRecord).reduce(0) { $0 + bestScore(forMode: $1) }
+        GameMode.allCases.filter(\.tracksRecord).reduce(0) { total, mode in
+            let best = bestScore(forMode: mode)
+            // Survie's record is a question count, so convert it back to points to
+            // keep the sum in a single unit.
+            return total + (mode.recordsQuestionCount ? best * (Scoring.baseCorrect + Scoring.maxSpeedBonus) : best)
+        }
     }
 
     public static func recordKey(mode: GameMode, categoryID: String?, difficulty: Difficulty?) -> String {
         "\(mode.rawValue)|\(categoryID ?? "all")|\(difficulty?.rawValue ?? "toutes")"
+    }
+
+    /// Survie used to store a point score as its record; it now stores the number of
+    /// questions chained. Converts any legacy entry (a value large enough to only be
+    /// a score, questions being worth 100 to 200 points each) using the *highest*
+    /// per-question value, so a migrated record is never inflated above what the
+    /// player actually reached.
+    static func migratedRecords(_ records: [String: Int]) -> [String: Int] {
+        let prefix = "\(GameMode.survie.rawValue)|"
+        let perQuestion = Scoring.baseCorrect + Scoring.maxSpeedBonus
+        return records.reduce(into: records) { out, entry in
+            guard entry.key.hasPrefix(prefix), entry.value >= Scoring.baseCorrect else { return }
+            out[entry.key] = max(1, entry.value / perQuestion)
+        }
     }
 
     public func bestScore(mode: GameMode, categoryID: String?, difficulty: Difficulty?) -> Int {
@@ -207,8 +241,8 @@ public struct PlayerProfile: Codable, Sendable {
         var newRecord = false
         if result.mode.tracksRecord {
             let key = Self.recordKey(mode: result.mode, categoryID: result.categoryID, difficulty: result.difficulty)
-            if result.score > (bestScores[key] ?? 0) {
-                bestScores[key] = result.score
+            if result.recordValue > (bestScores[key] ?? 0) {
+                bestScores[key] = result.recordValue
                 newRecord = true
             }
         }
@@ -218,6 +252,9 @@ public struct PlayerProfile: Codable, Sendable {
         totalCorrect += result.correctCount
         totalAnswered += result.total
         bestStreakEver = max(bestStreakEver, result.bestStreak)
+        for (themeID, stat) in result.themeBreakdown {
+            themeStats[themeID, default: ThemeStat()].merge(stat)
+        }
         lastPlayedDay = day
         if result.mode == .duel {
             duelGames += 1
@@ -302,9 +339,13 @@ public struct PlayerProfile: Codable, Sendable {
 
     /// Records playing today's daily challenge (the défi). The daily play streak
     /// itself is held by finishing any game, handled in `apply(result:day:)`.
-    public mutating func registerDaily(day: Int) {
+    /// `correct` vaut -1 quand la tentative est consommée sans partie terminée
+    /// (app tuée en cours de défi) : il n'y a alors aucun score à afficher.
+    public mutating func registerDaily(day: Int, correct: Int = -1, reward: Int = 0) {
         guard day != lastDailyDay else { return }
         lastDailyDay = day
+        lastDailyCorrect = correct
+        lastDailyReward = reward
         defiCompletedCount += 1
     }
 

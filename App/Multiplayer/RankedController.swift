@@ -52,6 +52,11 @@ final class RankedController: Identifiable {
     private let revealSeconds: Double = 3.5
     private var questionStartedAt = Date()
     private var localIndex = -1       // question currently shown locally
+    /// Question the server is on when we first read the row. Normally 0, mais si
+    /// on rejoint un match déjà entamé (poll tardif, reprise), ouvrir la question 0
+    /// faisait rejeter toutes nos réponses par `ranked-answer` (« stale, ignore »)
+    /// et l'écran restait figé sur une question morte.
+    private var joinIndex = 0
     private var started = false
     private var revealing = false
     private var didFinalize = false
@@ -160,6 +165,7 @@ final class RankedController: Identifiable {
         m.playerJoined(b)
         m.beginRound(questions: row.questions, roundID: row.id)
         match = m
+        joinIndex = min(max(0, row.current_index), max(0, row.questions.count - 1))
         me = localClientID == row.player_a ? a : b
         opponent = localClientID == row.player_a ? b : a
     }
@@ -176,7 +182,7 @@ final class RankedController: Identifiable {
             }
             guard let self else { return }
             self.countdown = nil
-            self.openQuestion(0)
+            self.openQuestion(self.joinIndex)
         }
     }
 
@@ -217,7 +223,9 @@ final class RankedController: Identifiable {
         let correct = answerIndex == q.correctIndex
         let elapsedMs = max(0, Int(Date().timeIntervalSince(questionStartedAt) * 1000))
         localSelectedIndex = answerIndex
-        if answerIndex != nil { Haptics.impact(correct ? .light : .rigid) }
+        // Tap = retour neutre : le verdict est joué à la révélation (cf.
+        // `applyRevealForLocal`), sinon la vibration devance la correction.
+        if answerIndex != nil { Haptics.impact(.soft) }
         m.recordAnswer(clientID: localClientID, index: index,
                        answer: DuelAnswer(answerIndex: answerIndex, correct: correct, elapsedMs: elapsedMs))
         match = m
@@ -269,6 +277,10 @@ final class RankedController: Identifiable {
         }?.key
         m.applyReveal(index: index, snapshot: snapshot, winner: winner)
         match = m
+        // La correction s'affiche maintenant : c'est ici que le verdict se sent.
+        if let mine = m.answer(of: localClientID, at: index) {
+            Haptics.impact(mine.correct ? .light : .rigid)
+        }
         barTask?.cancel()
     }
 
@@ -301,7 +313,12 @@ final class RankedController: Identifiable {
             session.advance()
         }
         let prev = store.profile.bestScore(mode: .duel, categoryID: Category.melange.id, difficulty: .normal)
-        let result = session.makeResult(previousBest: prev, duelWon: duelWon)
+        // La ligue se joue SANS mise : ce qui est en jeu, c'est l'ELO, pas le
+        // porte-monnaie. Une mise à 0 (plutôt que `duelWon: nil`, qui signifie
+        // « match nul ») annule le règlement en pièces tout en gardant la
+        // victoire/défaite exacte pour l'écran de résultats.
+        let noWager = DuelWager(stake: 0, playerCount: 2, winnerCount: 1)
+        let result = session.makeResult(previousBest: prev, duelWon: duelWon, duelWager: noWager)
         localResult = result
         localApplied = store.finish(result: result)
         Haptics.notify(outcome == .won ? .success : .warning)

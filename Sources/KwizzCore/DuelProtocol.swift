@@ -41,6 +41,10 @@ public struct DuelAnswer: Codable, Hashable, Sendable {
 public enum DuelEvent: Codable, Sendable, Equatable {
     /// Sent on entry to announce identity (enriches presence).
     case hello(player: DuelPlayer)
+    /// Host only: announces the room's settings (stake and scoring rule). Re-sent on
+    /// every roster change so a player joining late learns what the party costs and
+    /// how points are won.
+    case settings(DuelSettings)
     /// Host only: locks the room and hands everyone the exact same questions.
     case start(questions: [Question], roundID: String)
     /// Host only: opens the answering window for question `index` for everyone.
@@ -52,4 +56,8 @@ public enum DuelEvent: Codable, Sendable, Equatable {
     case reveal(index: Int, answers: [String: DuelAnswer], winner: String?)
     /// Host only: the last question is done; go to the podium.
     case finish
+    /// Hôte seulement : on repart pour une manche. La salle revient au salon avec
+    /// les joueurs encore connectés et les mêmes réglages ; rien n'est recréé,
+    /// c'est le même canal et le même code qui resservent.
+    case rematch
 }

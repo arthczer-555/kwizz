@@ -97,7 +97,9 @@ private struct ShopItemCard: View {
 
     @ViewBuilder
     private var statusLabel: some View {
-        if !unlocked {
+        // Un level-locked non possédé est forcément encore verrouillé (le palier
+        // franchi le crédite) : jamais de prix « 0 pièce » affiché ici.
+        if !unlocked || (item.isLevelLocked && !owned) {
             HStack(spacing: 4) {
                 Image(systemName: "lock.fill")
                 Text("NIVEAU \(item.unlockLevel ?? 0)")

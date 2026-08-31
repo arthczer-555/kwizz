@@ -16,10 +16,14 @@ public struct GameResult: Identifiable, Sendable {
     public let xpEarned: Int
     public let isNewRecord: Bool
     public let duelWon: Bool?
+    /// Réussite par thème sur cette manche (clé = `Question.categoryID`). Vide pour
+    /// un résultat construit à la main, ce qui laisse les stats cumulées intactes.
+    public let themeBreakdown: [String: ThemeStat]
 
     public init(mode: GameMode, difficulty: Difficulty?, categoryID: String?, score: Int,
                 maxScore: Int, correctCount: Int, total: Int, bestStreak: Int,
-                coinsEarned: Int, xpEarned: Int, isNewRecord: Bool, duelWon: Bool?) {
+                coinsEarned: Int, xpEarned: Int, isNewRecord: Bool, duelWon: Bool?,
+                themeBreakdown: [String: ThemeStat] = [:]) {
         self.id = UUID()
         self.mode = mode
         self.difficulty = difficulty
@@ -33,7 +37,13 @@ public struct GameResult: Identifiable, Sendable {
         self.xpEarned = xpEarned
         self.isNewRecord = isNewRecord
         self.duelWon = duelWon
+        self.themeBreakdown = themeBreakdown
     }
+
+    /// The value kept as the personal record for this mode: the points scored,
+    /// except in Survie where the record is the number of questions chained before
+    /// the first mistake.
+    public var recordValue: Int { mode.recordsQuestionCount ? correctCount : score }
 
     public var scoreFraction: Double {
         maxScore > 0 ? Double(score) / Double(maxScore) : 0
