@@ -13,6 +13,8 @@ struct HomeView: View {
         // pour un seul candidat et ViewThatFits ne testerait rien. La dernière
         // sert de filet (retenue même si elle déborde), d'où la plus serrée.
         ViewThatFits(in: .vertical) {
+            content(avatarScale: 1.55, gap: 18)
+            content(avatarScale: 1.40, gap: 16)
             content(avatarScale: 1.30, gap: 16)
             content(avatarScale: 1.15, gap: 14)
             content(avatarScale: 1.00, gap: 12)
@@ -79,19 +81,6 @@ struct HomeView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 }
             }
-
-            // Série en cours
-            HStack(spacing: 6) {
-                Image(systemName: "flame.fill").font(.system(size: 12)).foregroundStyle(accent)
-                Text("Série J\(store.profile.dailyStreak)")
-                    .font(KFont.mono(11)).foregroundStyle(Theme.text)
-                Spacer()
-                Text(store.profile.dailyStreak > 0
-                        ? "prochain palier J\(StreakMilestone.next(after: store.profile.dailyStreak))"
-                        : "joue chaque jour")
-                    .font(KFont.mono(10)).foregroundStyle(Theme.muted)
-            }
-            .padding(.horizontal, 2)
         }
         .screenPadding()
         .padding(.vertical, gap)
@@ -102,29 +91,28 @@ struct HomeView: View {
     @ViewBuilder private func dailyCard(now: Date) -> some View {
         let available = store.dailyAvailable
         NavigationLink(value: Route.defiIntro) {
-            VStack(alignment: .leading, spacing: 9) {
-                HStack {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
                     SectionLabel("Défi du jour")
-                    Spacer()
-                    KTag(title: available ? "1 essai" : "✓ fait", selected: available)
-                }
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    // Gain et condition sur une seule ligne. Le badge « 1 essai »
+                    // coûtait une ligne entière pour une information que l'écran
+                    // d'intro du défi rappelle de toute façon avant de lancer.
+                    HStack(spacing: 6) {
                         CoinLabel(amount: available ? Economy.defiReward(errors: 0)
                                                     : store.profile.lastDailyReward,
                                   color: available ? nil : Theme.muted,
-                                  size: 16)
+                                  size: 15)
                         Text(available
                                 ? "pour \(DailyChallenge.questionCount) bonnes réponses"
                                 : dailyDoneSubtitle(now: now))
-                            .font(KFont.body(12))
+                            .font(KFont.body(11.5))
                             .foregroundStyle(Theme.muted)
                             .lineLimit(1)
-                            .minimumScaleFactor(0.8)
+                            .minimumScaleFactor(0.7)
                     }
-                    Spacer(minLength: 8)
-                    MiniAction(title: available ? "Jouer" : "Détail", filled: available)
                 }
+                Spacer(minLength: 6)
+                MiniAction(title: available ? "Jouer" : "Détail", filled: available)
             }
             .actionPanel(active: available)
         }
@@ -167,10 +155,10 @@ struct HomeView: View {
 
     @ViewBuilder private func rewardTile(icon: String, title: String, value: String,
                                          action: String, active: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
+                    .font(.system(size: 13))
                     .foregroundStyle(active ? accent : Theme.muted)
                 SectionLabel(title)
                 Spacer()
@@ -178,9 +166,9 @@ struct HomeView: View {
             Text(value)
                 .font(KFont.mono(active ? 15 : 13, bold: active))
                 .foregroundStyle(active ? Theme.text : Theme.muted)
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
             // Ligne d'action : c'est elle qui dit que la tuile est un bouton.
-            VStack(spacing: 7) {
+            VStack(spacing: 6) {
                 Rectangle()
                     .fill(active ? accent : Theme.faint)
                     .frame(height: 1)
@@ -200,7 +188,7 @@ struct HomeView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .kPanel(12)
+        .kPanel(11)
     }
 
     /// Temps restant avant la remise à zéro quotidienne (minuit local).
@@ -248,8 +236,8 @@ private struct ActionPanel: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .padding(.vertical, 12)
-            .padding(.horizontal, 13)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.surface)
             .overlay(Rectangle().stroke(Theme.border, lineWidth: 1))
