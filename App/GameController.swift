@@ -30,9 +30,9 @@ final class GameController: Identifiable {
 
     var phase: Phase = .playing
     var selectedIndex: Int?
-    /// La réponse est validée (`phase == .revealed`) mais la correction n'est pas
-    /// encore affichée : le temps de voir sa propre case s'allumer en blanc avant
-    /// que le vert / rouge ne tombe. Piloté par `revealTask`.
+    /// La correction (vert / rouge) est affichée. En solo elle tombe dès le tap,
+    /// donc ce drapeau passe à `true` en même temps que `phase == .revealed` ;
+    /// il reste là pour que les vues distinguent les deux temps.
     var revealVisible = false
     /// Per-question countdown, 1 -> 0, animated by SwiftUI.
     var barFraction: Double = 1
@@ -125,24 +125,18 @@ final class GameController: Identifiable {
         }
         let outcome = session.submit(answerIndex: index, remainingFraction: remaining)
         phase = .revealed(outcome)
-        revealVisible = false
-        // Un tap = un retour neutre (la case passe en blanc). Le verdict n'est
-        // tapé qu'à la révélation, sinon la vibration spoile la correction.
-        if index != nil { Haptics.impact(.soft) }
+        // En solo, la correction tombe dès le tap : pas de temps mort en blanc.
+        // (L'attente blanche n'a de sens qu'en duel, le temps que l'adversaire
+        // réponde : elle est gérée par DuelController.)
+        revealVisible = true
+        Haptics.impact(outcome.wasCorrect ? .light : .rigid)
 
-        // Temps mort volontaire entre « j'ai choisi » et « voici la réponse ».
-        // Un timeout n'a rien à montrer : on révèle tout de suite.
-        let hold = index == nil ? 0 : (isContreLaMontre ? 0.18 : 0.35)
+        // Contre-la-montre keeps a fast rhythm: reveal briefly, then auto-advance.
         revealTask?.cancel()
+        guard isContreLaMontre else { return }
         revealTask = Task { [weak self] in
-            if hold > 0 { try? await Task.sleep(for: .seconds(hold)) }
+            try? await Task.sleep(for: .seconds(0.55))
             guard let self, !Task.isCancelled, case .revealed = self.phase else { return }
-            withAnimation(.easeOut(duration: 0.15)) { self.revealVisible = true }
-            Haptics.impact(outcome.wasCorrect ? .light : .rigid)
-            // Contre-la-montre keeps a fast rhythm: reveal briefly, then auto-advance.
-            guard self.isContreLaMontre else { return }
-            try? await Task.sleep(for: .seconds(0.4))
-            guard !Task.isCancelled else { return }
             self.next()
         }
     }

@@ -219,8 +219,8 @@ struct GameView: View {
         return false
     }
 
-    /// Vrai seulement une fois la correction affichée : entre le tap et la
-    /// révélation, l'explication et le bouton « Suivant » restent cachés.
+    /// Vrai dès que la correction est affichée (immédiate en solo) : c'est ce qui
+    /// fait apparaître l'explication et le bouton « Suivant ».
     private var isRevealed: Bool {
         if case .revealed = game.phase { return game.revealVisible }
         return false
@@ -246,11 +246,7 @@ struct GameView: View {
 
     private func answerState(_ idx: Int, correctIndex: Int) -> AnswerRow.State {
         if case .revealed = game.phase {
-            // Temps 1 : seul le choix du joueur s'allume, en blanc, sans verdict.
-            guard game.revealVisible else {
-                return idx == game.selectedIndex ? .selected : .dim
-            }
-            // Temps 2 : la correction tombe (vert / rouge).
+            // En solo la correction est immédiate : vert / rouge dès le tap.
             if idx == correctIndex { return .correct }
             if idx == game.selectedIndex { return .wrong }
             return .dim
